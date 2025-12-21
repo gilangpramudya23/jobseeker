@@ -46,7 +46,7 @@ class RAGAgent:
 
         Question: {question}
         
-        If you cannot find the answer in the context, please say "I don't have enough information in my knowledge base to answer this."
+        If you cannot find the answer in the context, please response anything that relevant according to the user's question
         """
         self.prompt = ChatPromptTemplate.from_template(
             """You are a helpful Careeer Assistant.

@@ -10,30 +10,26 @@ load_dotenv()
 
 class InterviewAgent:
     def __init__(self):
-        """
-        Initializes the Interview Agent with SpeechRecognition and LangChain.
-        """
-        self.recognizer = sr.Recognizer()
         self.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7)
         
-        # Define the interview prompt
-        self.template = """
-        You are an expert technical interviewer. 
-        Your goal is to conduct a mock interview with the candidate.
-        
-        Current conversation history:
-        {history}
-        
-        Candidate's answer: {answer}
-        
-        Task:
-        1. Evaluate the candidate's answer (briefly).
-        2. Ask the next relevant follow-up question.
-        
-        Keep your response conversational but professional.
-        """
-        self.prompt = ChatPromptTemplate.from_template(self.template)
-        self.history = ""
+        # Prompt yang mewajibkan AI menjawab sesuai bahasa user
+        self.prompt = ChatPromptTemplate.from_template("""
+            You are a professional Interviewer. 
+            
+            HISTORY: {history}
+            CANDIDATE ANSWER: {answer}
+            
+            INSTRUCTIONS:
+            1. Response in the SAME LANGUAGE as the candidate.
+            2. Give brief feedback on the answer.
+            3. Ask exactly ONE follow-up question.
+            
+            YOUR RESPONSE:
+        """)
+
+    def get_response(self, history, user_answer):
+        chain = self.prompt | self.llm | StrOutputParser()
+        return chain.invoke({"history": history, "answer": user_answer})
 
     def listen(self):
         """

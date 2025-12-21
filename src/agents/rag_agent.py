@@ -107,12 +107,27 @@ class RAGAgent:
         docs = self.retrieve_documents(query)
         
         if not docs:
-            return "I couldn't find any relevant information in the database."
+            context_text = "No specific job listings or internal documents found for this query."
+            logger.warning("No documents found in Qdrant. Switching to general knowledge.")
         else:
             context_text = "\n\n".join([doc.page_content for doc in docs])
         
+        flexible_prompt = ChatPromptTemplate.from_template(
+            """You are a professional Career Assistant.
+            CONTEXT FROM DATABASE:
+            {context}
+            USER QUESTION:
+            {question}
+            INSTRUCTIONS:
+            1. If the CONTEXT above has the answer, use it to give a specific response.
+            2. If the CONTEXT is empty or not relevant, use your own general knowledge to answer the user's question helpfully.
+            3. In the case of no data, you can say: "Currently, I don't have specific local listings for this, but based on industry standards..."
+            4. Always be encouraging and professional.
+            """
+        )
+        
         # 3. Generate
-        chain = self.prompt | self.llm | StrOutputParser()
+        chain = flexible_prompt | self.llm | StrOutputParser()
         
         response = chain.invoke({"context": context_text, "question": query})
         return response

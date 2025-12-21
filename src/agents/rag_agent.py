@@ -48,7 +48,24 @@ class RAGAgent:
         
         If you cannot find the answer in the context, please say "I don't have enough information in my knowledge base to answer this."
         """
-        self.prompt = ChatPromptTemplate.from_template(self.template)
+        self.prompt = ChatPromptTemplate.from_template(
+            """You are a helpful Careeer Assistant.
+            
+            Context from our database:
+            {context}
+            
+            User Question:
+            {question}
+            
+            Instructions:
+            1. If the context contains relevant information, answer the question clearly using that information.
+            2. If the context is empty or doesn't have the answer, DO NOT say "I don't know" or "No data".
+            3. Instead, give a general professional response based on your general knowledge as an AI, then suggest what the user can ask or do next (e.g., "Currently, I don't have specific job listings for that, but generally for this role you should prepare...")
+            4. Keep the tone encouraging and professional.
+
+            Your Response:
+            """
+        )
         
         # Initialize Langfuse CallbackHandler
         self.langfuse_handler = CallbackHandler()
@@ -91,14 +108,13 @@ class RAGAgent:
         
         if not docs:
             return "I couldn't find any relevant information in the database."
-        
-        # 2. Format context
-        context_text = "\n\n".join([doc.page_content for doc in docs])
+        else:
+            context_text = "\n\n".join([doc.page_content for doc in docs])
         
         # 3. Generate
         chain = self.prompt | self.llm | StrOutputParser()
         
-        response = chain.invoke({"context": context_text, "question": query}, config={"callbacks": [self.langfuse_handler]})
+        response = chain.invoke({"context": context_text, "question": query})
         return response
 
 if __name__ == "__main__":

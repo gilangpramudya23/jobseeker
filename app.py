@@ -106,7 +106,7 @@ elif menu == "Cover Letter Generator":
 from streamlit_mic_recorder import mic_recorder
 import openai
 
-elif menu == "Mock Interview (Voice)":
+if menu == "Mock Interview (Voice)":
     st.header("🎤 AI Mock Interview")
     
     # Init State
@@ -150,4 +150,5 @@ elif menu == "Mock Interview (Voice)":
             st.session_state.int_history += f"Candidate: {user_text}\nAgent: {response}\n"
             st.session_state.last_q = response
             st.rerun()
+
 

@@ -50,7 +50,7 @@ class InterviewAgent:
             "answer": user_answer
         })
         return response
-
+        
     def listen(self):
         """
         Listens to the microphone and converts speech to text using OpenAI Whisper (via SpeechRecognition if available or API).

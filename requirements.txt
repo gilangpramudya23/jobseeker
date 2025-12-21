@@ -1,0 +1,11 @@
+langchain
+langchain-community
+langchain-openai
+qdrant-client
+sqlalchemy
+python-dotenv
+openai
+pypdf
+langfuse
+SpeechRecognition
+pyaudio

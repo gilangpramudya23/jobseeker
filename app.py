@@ -1,0 +1,151 @@
+import streamlit as st
+import os
+from dotenv import load_dotenv
+from src.agents.orchestrator import Orchestrator
+from src.agents.advisor_agent import AdvisorAgent
+from src.agents.cover_letter_agent import CoverLetterAgent
+from src.agents.interview_agent import InterviewAgent
+from streamlit_mic_recorder import mic_recorder
+
+# Load environment variables
+load_dotenv()
+
+# Konfigurasi Halaman
+st.set_page_config(page_title="AI Career Hub", layout="wide")
+
+# Inisialisasi Agent (menggunakan cache agar tidak reload setiap saat)
+@st.cache_resource
+def init_agents():
+    return {
+        "orchestrator": Orchestrator(),
+        "advisor": AdvisorAgent(),
+        "cover_letter": CoverLetterAgent(),
+        "interview": InterviewAgent()
+    }
+
+agents = init_agents()
+
+# Sidebar Navigasi
+st.sidebar.title("🚀 Career AI Agent")
+menu = st.sidebar.radio("Pilih Fitur:", [
+    "Smart Chat (SQL & RAG)", 
+    "Career Advisor & CV Analysis", 
+    "Cover Letter Generator", 
+    "Mock Interview (Voice)"
+])
+
+st.sidebar.divider()
+st.sidebar.info("Gunakan sidebar untuk berpindah antar fungsi agent.")
+
+# --- 1. SMART CHAT (ORCHESTRATOR) ---
+if menu == "Smart Chat (SQL & RAG)":
+    st.header("💬 Smart Career Chat")
+    st.write("Tanyakan data statistik (SQL) atau informasi deskriptif lowongan (RAG).")
+    
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    if prompt := st.chat_input("Contoh: Berapa jumlah lowongan Python? atau Apa syarat Software Engineer?"):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+        with st.chat_message("assistant"):
+            with st.spinner("Berpikir..."):
+                response = agents["orchestrator"].route_query(prompt)
+                st.markdown(response)
+        st.session_state.messages.append({"role": "assistant", "content": response})
+
+# --- 2. CAREER ADVISOR ---
+elif menu == "Career Advisor & CV Analysis":
+    st.header("👨‍💼 Career Consultant")
+    uploaded_file = st.file_uploader("Upload CV kamu (PDF)", type=["pdf"])
+    
+    if uploaded_file:
+        # Simpan file sementara
+        with open("temp_cv.pdf", "wb") as f:
+            f.write(uploaded_file.getbuffer())
+        
+        if st.button("Analisis CV & Cari Lowongan"):
+            with st.spinner("Menganalisis profil kamu..."):
+                report = agents["advisor"].analyze_and_recommend("temp_cv.pdf")
+                st.markdown("### Laporan Konsultasi")
+                st.write(report)
+            os.remove("temp_cv.pdf")
+
+# --- 3. COVER LETTER GENERATOR ---
+elif menu == "Cover Letter Generator":
+    st.header("📝 Tailored Cover Letter")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        cv_file = st.file_uploader("Upload CV (PDF)", type=["pdf"], key="cl_cv")
+    with col2:
+        job_desc = st.text_area("Tempel Deskripsi Pekerjaan di sini:", height=200)
+
+    if st.button("Generate Cover Letter"):
+        if cv_file and job_desc:
+            with open("temp_cl_cv.pdf", "wb") as f:
+                f.write(cv_file.getbuffer())
+            
+            with st.spinner("Menulis Cover Letter..."):
+                letter = agents["cover_letter"].generate_cover_letter("temp_cl_cv.pdf", job_desc)
+                st.subheader("Hasil Cover Letter:")
+                st.text_area("Salin hasil di sini:", value=letter, height=400)
+            os.remove("temp_cl_cv.pdf")
+        else:
+            st.warning("Mohon upload CV dan isi deskripsi pekerjaan.")
+
+# --- 4. MOCK INTERVIEW (VOICE) ---
+elif menu == "Mock Interview (Voice)":
+    st.header("🎤 Mock Interview Practice")
+    st.write("Klik ikon mic untuk menjawab pertanyaan interview.")
+
+    if "int_history" not in st.session_state:
+        st.session_state.int_history = "Agent: Halo! Mari kita mulai. Ceritakan tentang diri Anda dan latar belakang Anda.\n"
+        st.session_state.last_agent_q = "Halo! Mari kita mulai. Ceritakan tentang diri Anda dan latar belakang Anda."
+
+    st.info(f"**Agent:** {st.session_state.last_agent_q}")
+
+    # Voice Input menggunakan streamlit-mic-recorder
+    audio = mic_recorder(start_prompt="Mulai Bicara 🎤", stop_prompt="Selesai ✅", key='recorder')
+
+    if audio:
+        # Simpan audio ke file sementara untuk diproses Whisper
+        with open("temp_audio.wav", "wb") as f:
+            f.write(audio['bytes'])
+        
+        with st.spinner("Memproses suara Anda..."):
+            # Kita modifikasi sedikit pemanggilan InterviewAgent agar cocok dengan audio Streamlit
+            # Menggunakan Whisper API lewat recognizer (seperti di interview_agent.py kamu)
+            import speech_recognition as sr
+            r = sr.Recognizer()
+            with sr.AudioFile("temp_audio.wav") as source:
+                audio_data = r.record(source)
+                try:
+                    user_text = r.recognize_whisper_api(audio_data, api_key=os.getenv("OPENAI_API_KEY"))
+                    st.success(f"Anda: {user_text}")
+                    
+                    # Update History & Generate Response
+                    st.session_state.int_history += f"Candidate: {user_text}\n"
+                    
+                    # Gunakan LLM dari interview agent
+                    chain = agents["interview"].prompt | agents["interview"].llm | (lambda x: x.content)
+                    response = chain.invoke({"history": st.session_state.int_history, "answer": user_text})
+                    
+                    st.session_state.last_agent_q = response
+                    st.session_state.int_history += f"Agent: {response}\n"
+                    st.rerun()
+                    
+                except Exception as e:
+                    st.error(f"Error: {e}")
+        os.remove("temp_audio.wav")
+
+    if st.button("Reset Interview"):
+        del st.session_state.int_history
+        del st.session_state.last_agent_q
+        st.rerun()

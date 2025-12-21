@@ -107,8 +107,7 @@ class RAGAgent:
         docs = self.retrieve_documents(query)
         
         if not docs:
-            context_text = "No specific job listings or internal documents found for this query."
-            logger.warning("No documents found in Qdrant. Switching to general knowledge.")
+            context_text = "No specific data found in the database. Please answer using your general knowledge."
         else:
             context_text = "\n\n".join([doc.page_content for doc in docs])
         
@@ -119,10 +118,10 @@ class RAGAgent:
             USER QUESTION:
             {question}
             INSTRUCTIONS:
-            1. If the CONTEXT above has the answer, use it to give a specific response.
-            2. If the CONTEXT is empty or not relevant, use your own general knowledge to answer the user's question helpfully.
-            3. In the case of no data, you can say: "Currently, I don't have specific local listings for this, but based on industry standards..."
-            4. Always be encouraging and professional.
+            1. Respond in the SAME LANGUAGE as the user's question.
+            2. If CONTEXT is empty, use your internal professional knowledge to provide a helpful answer.
+            3. Never say 'I don't know' or 'No data found'
+            4. Be encouraging and provide actionable advice.
             """
         )
         

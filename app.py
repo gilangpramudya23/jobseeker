@@ -1,11 +1,26 @@
 import streamlit as st
 import os
+import sys
 from dotenv import load_dotenv
-from src.agents.orchestrator import Orchestrator
-from src.agents.advisor_agent import AdvisorAgent
-from src.agents.cover_letter_agent import CoverLetterAgent
-from src.agents.interview_agent import InterviewAgent
-from streamlit_mic_recorder import mic_recorder
+
+# Add project root to path
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+
+# Import agents with error handling
+try:
+    from src.agents.orchestrator import Orchestrator
+    from src.agents.advisor_agent import AdvisorAgent
+    from src.agents.cover_letter_agent import CoverLetterAgent
+    from src.agents.interview_agent import InterviewAgent
+except ImportError as e:
+    st.error(f"Import Error: {e}")
+    st.stop()
+
+try:
+    from streamlit_mic_recorder import mic_recorder
+except ImportError:
+    st.warning("streamlit_mic_recorder not installed. Mock Interview feature will be limited.")
+    mic_recorder = None
 
 # Load environment variables
 load_dotenv()
@@ -16,14 +31,23 @@ st.set_page_config(page_title="AI Career Hub", layout="wide")
 # Inisialisasi Agent (menggunakan cache agar tidak reload setiap saat)
 @st.cache_resource
 def init_agents():
-    return {
-        "orchestrator": Orchestrator(),
-        "advisor": AdvisorAgent(),
-        "cover_letter": CoverLetterAgent(),
-        "interview": InterviewAgent()
-    }
+    """Initialize all agents with error handling"""
+    try:
+        return {
+            "orchestrator": Orchestrator(),
+            "advisor": AdvisorAgent(),
+            "cover_letter": CoverLetterAgent(),
+            "interview": InterviewAgent()
+        }
+    except Exception as e:
+        st.error(f"Error initializing agents: {e}")
+        return None
 
 agents = init_agents()
+
+if agents is None:
+    st.error("Failed to initialize agents. Please check your configuration.")
+    st.stop()
 
 # Sidebar Navigasi
 st.sidebar.title("🚀 Career AI Agent")
@@ -56,9 +80,14 @@ if menu == "Smart Chat (SQL & RAG)":
 
         with st.chat_message("assistant"):
             with st.spinner("Berpikir..."):
-                response = agents["orchestrator"].route_query(prompt)
-                st.markdown(response)
-        st.session_state.messages.append({"role": "assistant", "content": response})
+                try:
+                    response = agents["orchestrator"].route_query(prompt)
+                    st.markdown(response)
+                    st.session_state.messages.append({"role": "assistant", "content": response})
+                except Exception as e:
+                    error_msg = f"Error: {str(e)}"
+                    st.error(error_msg)
+                    st.session_state.messages.append({"role": "assistant", "content": error_msg})
 
 # --- 2. CAREER ADVISOR ---
 elif menu == "Career Advisor & CV Analysis":
@@ -72,10 +101,15 @@ elif menu == "Career Advisor & CV Analysis":
         
         if st.button("Analisis CV & Cari Lowongan"):
             with st.spinner("Menganalisis profil kamu..."):
-                report = agents["advisor"].analyze_and_recommend("temp_cv.pdf")
-                st.markdown("### Laporan Konsultasi")
-                st.write(report)
-            os.remove("temp_cv.pdf")
+                try:
+                    report = agents["advisor"].analyze_and_recommend("temp_cv.pdf")
+                    st.markdown("### Laporan Konsultasi")
+                    st.write(report)
+                except Exception as e:
+                    st.error(f"Error analyzing CV: {str(e)}")
+                finally:
+                    if os.path.exists("temp_cv.pdf"):
+                        os.remove("temp_cv.pdf")
 
 # --- 3. COVER LETTER GENERATOR ---
 elif menu == "Cover Letter Generator":
@@ -93,16 +127,25 @@ elif menu == "Cover Letter Generator":
                 f.write(cv_file.getbuffer())
             
             with st.spinner("Menulis Cover Letter..."):
-                letter = agents["cover_letter"].generate_cover_letter("temp_cl_cv.pdf", job_desc)
-                st.subheader("Hasil Cover Letter:")
-                st.text_area("Salin hasil di sini:", value=letter, height=400)
-            os.remove("temp_cl_cv.pdf")
+                try:
+                    letter = agents["cover_letter"].generate_cover_letter("temp_cl_cv.pdf", job_desc)
+                    st.subheader("Hasil Cover Letter:")
+                    st.text_area("Salin hasil di sini:", value=letter, height=400)
+                except Exception as e:
+                    st.error(f"Error generating cover letter: {str(e)}")
+                finally:
+                    if os.path.exists("temp_cl_cv.pdf"):
+                        os.remove("temp_cl_cv.pdf")
         else:
             st.warning("Mohon upload CV dan isi deskripsi pekerjaan.")
 
 # --- 4. MOCK INTERVIEW (VOICE) ---
 elif menu == "Mock Interview (Voice)":
     st.header("🎤 AI Mock Interview")
+    
+    if mic_recorder is None:
+        st.error("Mock Interview feature requires streamlit_mic_recorder. Please install it: pip install streamlit-mic-recorder")
+        st.stop()
     
     # Inisialisasi state jika belum ada
     if "int_history" not in st.session_state:

@@ -38,7 +38,7 @@ class RAGAgent:
         self.embeddings = OpenAIEmbeddings(model="text-embedding-3-small", api_key=api_key)
         
         # Initialize LLM
-        self.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, api_key=api_key)
+        self.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7, api_key=api_key)
         
         # Prompt Template
         self.template = """Answer the question based only on the following context:
@@ -118,10 +118,14 @@ class RAGAgent:
             USER QUESTION:
             {question}
             INSTRUCTIONS:
-            1. Respond in the SAME LANGUAGE as the user's question.
-            2. If CONTEXT is empty, use your internal professional knowledge to provide a helpful answer.
-            3. Never say 'I don't know' or 'No data found'
-            4. Be encouraging and provide actionable advice.
+            1. LANGUAGE CONSISTENCY: Detect the language of the user's question. ALWAYS respond in the SAME LANGUAGE as the user (e.g., if asked in Indonesian, respond in Indonesian; if asked in English, respond in English).
+            2. SMART RETRIEVAL: If the DATABASE CONTEXT contains relevant information, use it to provide a detailed answer.
+            3. NO-FAIL POLICY: If the CONTEXT is empty, irrelevant, or does not contain specific data, DO NOT say "I don't know", "I don't have enough information", or "No data found".
+            4. FALLBACK STRATEGY: In case of empty context, provide a high-quality response based on your general knowledge as a career expert. Offer helpful suggestions, industry trends, or general career advice related to the user's query.
+            5. GENERAL INTERACTION: For greetings (Hi, Hello), introductions, or general small talk, respond naturally and warmly without being restricted by the database context.
+            6. JOB SPECIFIC QUERIES: For specific job opening questions, check the context first. If not found, explain that while specific local listings aren't available right now, you can provide general advice on how to apply for such roles.
+            7. TONE: Maintain a friendly, professional, and encouraging persona at all times.
+            YOUR RESPONSE:
             """
         )
         

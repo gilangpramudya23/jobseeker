@@ -111,6 +111,26 @@ class InterviewAgent:
             
             # 5. Update History with Agent response
             self.history += f"Agent: {response}\n"
+            
+    def get_response(self, history: str, candidate_answer: str) -> str:
+        """
+        Generate interviewer's response based on conversation history and candidate's answer.
+        This method is designed for Streamlit integration.
+
+        Args:
+             history (str): The full conversation history so far
+             candidate_answer (str): The candidate's latest answer
+
+        Returns:
+            str: The interviewer's response (feedback + next question)
+        """
+        try:
+            chain = self.prompt | self.llm | StrOutputParser()
+            response = chain.invoke(
+                "history": history, "answer": candidate_answer}, config={"callbacks": [self.langfuse_handler]})
+            return response
+        except Exception as e:
+            return f"I apologize, I encountered an error: {str(e)}. Let's continue - could you tell me more about your experience?"
 
 if __name__ == "__main__":
     agent = InterviewAgent()

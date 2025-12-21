@@ -101,51 +101,60 @@ elif menu == "Cover Letter Generator":
             st.warning("Mohon upload CV dan isi deskripsi pekerjaan.")
 
 # --- 4. MOCK INTERVIEW (VOICE) ---
+# Di dalam app.py pada bagian menu "Mock Interview"
+
 elif menu == "Mock Interview (Voice)":
-    st.header("🎤 Mock Interview Practice")
-    st.write("Klik ikon mic untuk menjawab pertanyaan interview.")
-
+    st.header("🎤 AI Mock Interview")
+    
+    # Inisialisasi state jika belum ada
     if "int_history" not in st.session_state:
-        st.session_state.int_history = "Agent: Halo! Mari kita mulai. Ceritakan tentang diri Anda dan latar belakang Anda.\n"
-        st.session_state.last_agent_q = "Halo! Mari kita mulai. Ceritakan tentang diri Anda dan latar belakang Anda."
+        st.session_state.int_history = "Agent: Halo! Bisa ceritakan tentang diri Anda?\n"
+        st.session_state.last_q = "Halo! Bisa ceritakan tentang diri Anda?"
 
-    st.info(f"**Agent:** {st.session_state.last_agent_q}")
+    st.chat_message("assistant").write(st.session_state.last_q)
 
-    # Voice Input menggunakan streamlit-mic-recorder
-    audio = mic_recorder(start_prompt="Mulai Bicara 🎤", stop_prompt="Selesai ✅", key='recorder')
+    # Rekam Suara
+    audio = mic_recorder(
+        start_prompt="Klik untuk Bicara 🎙️",
+        stop_prompt="Berhenti & Kirim 📤",
+        key='recorder'
+    )
 
     if audio:
-        # Simpan audio ke file sementara untuk diproses Whisper
-        with open("temp_audio.wav", "wb") as f:
-            f.write(audio['bytes'])
-        
-        with st.spinner("Memproses suara Anda..."):
-            # Kita modifikasi sedikit pemanggilan InterviewAgent agar cocok dengan audio Streamlit
-            # Menggunakan Whisper API lewat recognizer (seperti di interview_agent.py kamu)
-            import speech_recognition as sr
-            r = sr.Recognizer()
-            with sr.AudioFile("temp_audio.wav") as source:
-                audio_data = r.record(source)
-                try:
-                    user_text = r.recognize_whisper_api(audio_data, api_key=os.getenv("OPENAI_API_KEY"))
-                    st.success(f"Anda: {user_text}")
-                    
-                    # Update History & Generate Response
-                    st.session_state.int_history += f"Candidate: {user_text}\n"
-                    
-                    # Gunakan LLM dari interview agent
-                    chain = agents["interview"].prompt | agents["interview"].llm | (lambda x: x.content)
-                    response = chain.invoke({"history": st.session_state.int_history, "answer": user_text})
-                    
-                    st.session_state.last_agent_q = response
-                    st.session_state.int_history += f"Agent: {response}\n"
-                    st.rerun()
-                    
-                except Exception as e:
-                    st.error(f"Error: {e}")
-        os.remove("temp_audio.wav")
+        with st.spinner("AI sedang mendengarkan..."):
+            # 1. Konversi Audio ke Teks menggunakan OpenAI Whisper
+            from openai import OpenAI
+            client = OpenAI()
+            
+            # Simpan buffer audio sementara
+            with open("temp_audio.mp3", "wb") as f:
+                f.write(audio['bytes'])
+            
+            # Whisper API
+            audio_file = open("temp_audio.mp3", "rb")
+            transcript = client.audio.transcriptions.create(
+                model="whisper-1", 
+                file=audio_file
+            )
+            user_text = transcript.text
+            
+            st.chat_message("user").write(user_text)
+
+            # 2. Kirim teks ke Interview Agent
+            response = agents["interview"].get_response(
+                st.session_state.int_history, 
+                user_text
+            )
+            
+            # 3. Update State
+            st.session_state.int_history += f"Candidate: {user_text}\nAgent: {response}\n"
+            st.session_state.last_q = response
+            
+            os.remove("temp_audio.mp3") # Hapus file temp
+            st.rerun() # Refresh untuk memunculkan pertanyaan baru
 
     if st.button("Reset Interview"):
         del st.session_state.int_history
         del st.session_state.last_agent_q
+
         st.rerun()

@@ -108,9 +108,12 @@ elif menu == "Mock Interview (Voice)":
     
     # Inisialisasi state jika belum ada
     if "int_history" not in st.session_state:
-        st.session_state.int_history = "Agent: Halo! Bisa ceritakan tentang diri Anda?\n"
+        st.session_state.int_history = ""
         st.session_state.last_q = "Halo! Bisa ceritakan tentang diri Anda?"
+        # Add initial greeting to history
+        st.session_state.int_history = f"Interviewer: {st.session_state.last_q}\n"
 
+    # Display the last question
     st.chat_message("assistant").write(st.session_state.last_q)
 
     # Rekam Suara
@@ -122,39 +125,53 @@ elif menu == "Mock Interview (Voice)":
 
     if audio:
         with st.spinner("AI sedang mendengarkan..."):
-            # 1. Konversi Audio ke Teks menggunakan OpenAI Whisper
-            from openai import OpenAI
-            client = OpenAI()
-            
-            # Simpan buffer audio sementara
-            with open("temp_audio.mp3", "wb") as f:
-                f.write(audio['bytes'])
-            
-            # Whisper API
-            audio_file = open("temp_audio.mp3", "rb")
-            transcript = client.audio.transcriptions.create(
-                model="whisper-1", 
-                file=audio_file
-            )
-            user_text = transcript.text
-            
-            st.chat_message("user").write(user_text)
+            try:
+                # 1. Konversi Audio ke Teks menggunakan OpenAI Whisper
+                from openai import OpenAI
+                client = OpenAI()
+                
+                # Simpan buffer audio sementara
+                with open("temp_audio.mp3", "wb") as f:
+                    f.write(audio['bytes'])
+                
+                # Whisper API
+                with open("temp_audio.mp3", "rb") as audio_file:
+                    transcript = client.audio.transcriptions.create(
+                        model="whisper-1", 
+                        file=audio_file
+                    )
+                user_text = transcript.text
+                
+                st.chat_message("user").write(user_text)
 
-            # 2. Kirim teks ke Interview Agent
-            response = agents["interview"].get_response(
-                st.session_state.int_history, 
-                user_text
-            )
-            
-            # 3. Update State
-            st.session_state.int_history += f"Candidate: {user_text}\nAgent: {response}\n"
-            st.session_state.last_q = response
-            
-            os.remove("temp_audio.mp3") # Hapus file temp
-            st.rerun() # Refresh untuk memunculkan pertanyaan baru
+                # 2. Kirim teks ke Interview Agent
+                response = agents["interview"].get_response(
+                    st.session_state.int_history, 
+                    user_text
+                )
+                
+                # 3. Update State
+                st.session_state.int_history += f"Candidate: {user_text}\n"
+                st.session_state.int_history += f"Interviewer: {response}\n"
+                st.session_state.last_q = response
+                
+                # 4. Clean up temp file
+                if os.path.exists("temp_audio.mp3"):
+                    os.remove("temp_audio.mp3")
+                
+                # 5. Rerun to show new question
+                st.rerun()
+                
+            except Exception as e:
+                st.error(f"Terjadi kesalahan: {str(e)}")
+                # Clean up on error
+                if os.path.exists("temp_audio.mp3"):
+                    os.remove("temp_audio.mp3")
 
     if st.button("Reset Interview"):
-        del st.session_state.int_history
-        del st.session_state.last_agent_q
-
+        # Clear all interview state
+        if "int_history" in st.session_state:
+            del st.session_state.int_history
+        if "last_q" in st.session_state:
+            del st.session_state.last_q
         st.rerun()

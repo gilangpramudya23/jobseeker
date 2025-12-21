@@ -103,58 +103,51 @@ elif menu == "Cover Letter Generator":
 # --- 4. MOCK INTERVIEW (VOICE) ---
 # Di dalam app.py pada bagian menu "Mock Interview"
 
+from streamlit_mic_recorder import mic_recorder
+import openai
+
 elif menu == "Mock Interview (Voice)":
     st.header("🎤 AI Mock Interview")
     
-    # Inisialisasi state jika belum ada
+    # Init State
     if "int_history" not in st.session_state:
-        st.session_state.int_history = "Agent: Halo! Bisa ceritakan tentang diri Anda?\n"
-        st.session_state.last_q = "Halo! Bisa ceritakan tentang diri Anda?"
+        st.session_state.int_history = "Agent: Hello! Let's start. Tell me about yourself.\n"
+        st.session_state.last_q = "Hello! Let's start. Tell me about yourself."
 
-    st.chat_message("assistant").write(st.session_state.last_q)
+    st.write(f"**Interviewer:** {st.session_state.last_q}")
 
-    # Rekam Suara
+    # Widget Mic Recorder (Ini yang muncul di browser)
     audio = mic_recorder(
-        start_prompt="Klik untuk Bicara 🎙️",
-        stop_prompt="Berhenti & Kirim 📤",
-        key='recorder'
+        start_prompt="Click to Speak 🎙️",
+        stop_prompt="Stop & Send 📤",
+        key='interview_mic'
     )
 
     if audio:
-        with st.spinner("AI sedang mendengarkan..."):
-            # 1. Konversi Audio ke Teks menggunakan OpenAI Whisper
-            from openai import OpenAI
-            client = OpenAI()
-            
-            # Simpan buffer audio sementara
-            with open("temp_audio.mp3", "wb") as f:
+        with st.spinner("AI is listening..."):
+            # 1. Simpan audio bytes ke file sementara
+            with open("temp.mp3", "wb") as f:
                 f.write(audio['bytes'])
             
-            # Whisper API
-            audio_file = open("temp_audio.mp3", "rb")
+            # 2. Transcribe Suara ke Teks (Whisper)
+            client = openai.OpenAI()
+            audio_file = open("temp.mp3", "rb")
             transcript = client.audio.transcriptions.create(
                 model="whisper-1", 
                 file=audio_file
             )
             user_text = transcript.text
             
-            st.chat_message("user").write(user_text)
+            st.success(f"You: {user_text}")
 
-            # 2. Kirim teks ke Interview Agent
+            # 3. Kirim ke Agent
             response = agents["interview"].get_response(
                 st.session_state.int_history, 
                 user_text
             )
             
-            # 3. Update State
+            # 4. Update History & Rerun
             st.session_state.int_history += f"Candidate: {user_text}\nAgent: {response}\n"
             st.session_state.last_q = response
-            
-            os.remove("temp_audio.mp3") # Hapus file temp
-            st.rerun() # Refresh untuk memunculkan pertanyaan baru
+            st.rerun()
 
-    if st.button("Reset Interview"):
-        del st.session_state.int_history
-        del st.session_state.last_agent_q
-
-        st.rerun()

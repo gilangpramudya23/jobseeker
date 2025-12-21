@@ -101,8 +101,6 @@ elif menu == "Cover Letter Generator":
             st.warning("Mohon upload CV dan isi deskripsi pekerjaan.")
 
 # --- 4. MOCK INTERVIEW (VOICE) ---
-# Di dalam app.py pada bagian menu "Mock Interview"
-
 elif menu == "Mock Interview (Voice)":
     st.header("🎤 AI Mock Interview")
     

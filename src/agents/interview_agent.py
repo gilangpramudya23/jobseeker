@@ -9,14 +9,20 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class InterviewAgent:
+import os
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from dotenv import load_dotenv
+
+load_dotenv()
+
+class InterviewAgent:
     def __init__(self):
-        """
-        Initializes the Interview Agent with SpeechRecognition and LangChain.
-        """
-        self.recognizer = sr.Recognizer()
-        self.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7)
+        # Gunakan API Key dari environment (Streamlit Secrets di Cloud)
+        api_key = os.getenv("OPENAI_API_KEY")
+        self.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7, api_key=api_key)
         
-        # Define the interview prompt
         self.template = """
         You are an expert technical interviewer. 
         Your goal is to conduct a mock interview with the candidate.
@@ -27,13 +33,23 @@ class InterviewAgent:
         Candidate's answer: {answer}
         
         Task:
-        1. Evaluate the candidate's answer (briefly).
+        1. Evaluate the candidate's answer briefly.
         2. Ask the next relevant follow-up question.
         
         Keep your response conversational but professional.
         """
         self.prompt = ChatPromptTemplate.from_template(self.template)
-        self.history = ""
+
+    def get_response(self, history, user_answer):
+        """
+        Fungsi ini menggantikan loop while True agar cocok dengan Streamlit.
+        """
+        chain = self.prompt | self.llm | StrOutputParser()
+        response = chain.invoke({
+            "history": history, 
+            "answer": user_answer
+        })
+        return response
 
     def listen(self):
         """

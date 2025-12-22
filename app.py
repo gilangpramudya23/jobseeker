@@ -114,7 +114,8 @@ if menu == "Mock Interview (Voice)":
         st.session_state.interview_log = []
 
     for msg in st.session_state.interview_log[-3:]:
-        st.success(f"**You:** {msg}")
+        with st.success(f"**You:** {msg}"):
+            st.write(msg)
     
     # 1. Inisialisasi State (Hanya jalan sekali di awal)
     if "interview_history" not in st.session_state:
@@ -165,6 +166,7 @@ if menu == "Mock Interview (Voice)":
             os.remove("temp_interview.mp3")
             st.rerun() # Refresh tampilan untuk memunculkan pertanyaan baru
             st.success(f"You {user_text}")
+
 
 
 

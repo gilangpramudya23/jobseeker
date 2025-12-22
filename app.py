@@ -41,50 +41,24 @@ st.sidebar.info("Gunakan sidebar untuk berpindah antar fungsi agent.")
 if menu == "Smart Chat (SQL & RAG)":
     st.header("💬 Smart Career Chat")
     st.write("Tanyakan data statistik (SQL) atau informasi deskriptif lowongan (RAG).")
-    st.caption("💡 AI akan mengingat konteks percakapan sebelumnya!")
     
-    # Initialize message history
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    # Display chat history
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-    # Chat input
     if prompt := st.chat_input("Contoh: Berapa jumlah lowongan Python? atau Apa syarat Software Engineer?"):
-        # Add user message to history
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # Generate response with context
         with st.chat_message("assistant"):
             with st.spinner("Berpikir..."):
-                try:
-                    # Build conversation history for context
-                    # Format: "User: question\nAssistant: answer\n..."
-                    conversation_history = ""
-                    if len(st.session_state.messages) > 1:  # Only if there's previous conversation
-                        for msg in st.session_state.messages[:-1]:  # Exclude current message
-                            role = "User" if msg["role"] == "user" else "Assistant"
-                            conversation_history += f"{role}: {msg['content']}\n"
-                    
-                    # Get response from orchestrator with history (or None if no history)
-                    if conversation_history:
-                        response = agents["orchestrator"].route_query(prompt, conversation_history)
-                    else:
-                        response = agents["orchestrator"].route_query(prompt)
-                    
-                    st.markdown(response)
-                    
-                    # Add assistant response to history
-                    st.session_state.messages.append({"role": "assistant", "content": response})
-                except Exception as e:
-                    error_msg = f"Error: {str(e)}"
-                    st.error(error_msg)
-                    st.session_state.messages.append({"role": "assistant", "content": error_msg})
+                response = agents["orchestrator"].route_query(prompt)
+                st.markdown(response)
+        st.session_state.messages.append({"role": "assistant", "content": response})
     
     # Add clear chat button
     if len(st.session_state.messages) > 0:
@@ -202,6 +176,7 @@ if menu == "Mock Interview (Voice)":
             os.remove("temp_interview.mp3")
             st.rerun() # Refresh tampilan untuk memunculkan pertanyaan baru
             st.success(f"You {user_text}")
+
 
 
 

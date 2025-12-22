@@ -146,6 +146,7 @@ if menu == "Mock Interview (Voice)":
 
             # SIMPAN PESAN AI KE STATE
             st.session_state.messages.append({"role": "user", "content": user_text})
+            st.chat_message("user").write(user_text)
             
             # Panggil agent untuk jawaban
             response = agents["interview"].get_response(
@@ -161,6 +162,7 @@ if menu == "Mock Interview (Voice)":
             
             os.remove("temp_interview.mp3")
             st.rerun() # Refresh tampilan untuk memunculkan pertanyaan baru
+
 
 
 

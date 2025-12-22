@@ -66,12 +66,17 @@ if menu == "Smart Chat (SQL & RAG)":
                     # Build conversation history for context
                     # Format: "User: question\nAssistant: answer\n..."
                     conversation_history = ""
-                    for msg in st.session_state.messages[:-10]:  # Exclude current message
-                        role = "User" if msg["role"] == "user" else "Assistant"
-                        conversation_history += f"{role}: {msg['content']}\n"
+                    if len(st.session_state.messages) > 1:  # Only if there's previous conversation
+                        for msg in st.session_state.messages[:-1]:  # Exclude current message
+                            role = "User" if msg["role"] == "user" else "Assistant"
+                            conversation_history += f"{role}: {msg['content']}\n"
                     
-                    # Get response from orchestrator with history
-                    response = agents["orchestrator"].route_query(prompt, conversation_history)
+                    # Get response from orchestrator with history (or None if no history)
+                    if conversation_history:
+                        response = agents["orchestrator"].route_query(prompt, conversation_history)
+                    else:
+                        response = agents["orchestrator"].route_query(prompt)
+                    
                     st.markdown(response)
                     
                     # Add assistant response to history
@@ -88,6 +93,7 @@ if menu == "Smart Chat (SQL & RAG)":
             if st.button("🗑️ Clear Chat"):
                 st.session_state.messages = []
                 st.rerun()
+                
 # --- 2. CAREER ADVISOR ---
 elif menu == "Career Advisor & CV Analysis":
     st.header("👨‍💼 Career Consultant")
@@ -196,6 +202,7 @@ if menu == "Mock Interview (Voice)":
             os.remove("temp_interview.mp3")
             st.rerun() # Refresh tampilan untuk memunculkan pertanyaan baru
             st.success(f"You {user_text}")
+
 
 
 

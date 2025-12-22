@@ -109,6 +109,12 @@ import openai
 # --- DI DALAM KONDISI MENU INTERVIEW ---
 if menu == "Mock Interview (Voice)":
     st.header("🎤 AI Mock Interview")
+
+    if "interview_log" not in st.session_state:
+        st.session_state.interview_log = []
+
+    for msg in st.session_state.interview_log[-3:]:
+        st.success(f"**You:** {msg}")
     
     # 1. Inisialisasi State (Hanya jalan sekali di awal)
     if "interview_history" not in st.session_state:
@@ -160,6 +166,7 @@ if menu == "Mock Interview (Voice)":
             
             os.remove("temp_interview.mp3")
             st.rerun() # Refresh tampilan untuk memunculkan pertanyaan baru
+
 
 
 

@@ -66,7 +66,7 @@ if menu == "Smart Chat (SQL & RAG)":
                     # Build conversation history for context
                     # Format: "User: question\nAssistant: answer\n..."
                     conversation_history = ""
-                    for msg in st.session_state.messages[:-1]:  # Exclude current message
+                    for msg in st.session_state.messages[:-10]:  # Exclude current message
                         role = "User" if msg["role"] == "user" else "Assistant"
                         conversation_history += f"{role}: {msg['content']}\n"
                     
@@ -196,6 +196,7 @@ if menu == "Mock Interview (Voice)":
             os.remove("temp_interview.mp3")
             st.rerun() # Refresh tampilan untuk memunculkan pertanyaan baru
             st.success(f"You {user_text}")
+
 
 
 

@@ -143,7 +143,6 @@ if menu == "Mock Interview (Voice)":
                     file=audio_file
                 )
             user_text = transcript.text
-            st.session_state.interview_messages.append(user_text)
             
             # Panggil agent untuk jawaban
             response = agents["interview"].get_response(
@@ -159,6 +158,7 @@ if menu == "Mock Interview (Voice)":
             
             os.remove("temp_interview.mp3")
             st.rerun() # Refresh tampilan untuk memunculkan pertanyaan baru
+
 
 
 

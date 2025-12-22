@@ -137,7 +137,7 @@ if menu == "Mock Interview (Voice)":
             )
             user_text = transcript.text
 
-            st.sucess(f"You {user_text}")
+            st.success(f"You {user_text}")
 
             # 3. Kirim ke Agent
             response = agents["interview"].get_response(
@@ -149,6 +149,7 @@ if menu == "Mock Interview (Voice)":
             st.session_state.int_history += f"Candidate: {user_text}\nAgent: {response}\n"
             st.session_state.last_q = response
             st.rerun()
+
 
 
 

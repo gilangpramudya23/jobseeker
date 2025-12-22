@@ -49,15 +49,24 @@ if menu == "Smart Chat (SQL & RAG)":
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-    if prompt := st.chat_input("Contoh: Berapa jumlah lowongan Python? atau Apa syarat Software Engineer?"):
+    if prompt := st.chat_input("Tanyakan sesuatu..."):
+        # 1. Tampilkan pesan user di UI
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
-
+            
+        context_messages = st.session_state.messages[-10:]
+        history_string = ""
+        for m in context_messages:
+            role_name = "User" if m["role"] == "user" else "Assistant"
+            history_string += f"{role_name}: {m['content']}\n"
+        # 3. KIRIM KE AGENT
         with st.chat_message("assistant"):
-            with st.spinner("Berpikir..."):
-                response = agents["orchestrator"].route_query(prompt)
-                st.markdown(response)
+            # Kirim prompt DAN history_string
+            response = agents["orchestrator"].route_request(prompt, history_string)
+            st.markdown(response)
+
+        # 4. Simpan respon assistant ke state
         st.session_state.messages.append({"role": "assistant", "content": response})
 
 # --- 2. CAREER ADVISOR ---
@@ -168,6 +177,7 @@ if menu == "Mock Interview (Voice)":
             os.remove("temp_interview.mp3")
             st.rerun() # Refresh tampilan untuk memunculkan pertanyaan baru
             st.success(f"You {user_text}")
+
 
 
 

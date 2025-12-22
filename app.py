@@ -149,7 +149,7 @@ if menu == "Mock Interview (Voice)":
                 st.session_state.interview_history, 
                 user_text
             )
-            st.session_state.messages.append({"role": "assistant", "content": response})
+            
             
             # Simpan ke history dan tandai audio sudah diproses
             st.session_state.interview_history += f"Candidate: {user_text}\nInterviewer: {response}\n"
@@ -158,6 +158,7 @@ if menu == "Mock Interview (Voice)":
             
             os.remove("temp_interview.mp3")
             st.rerun() # Refresh tampilan untuk memunculkan pertanyaan baru
+
 
 
 

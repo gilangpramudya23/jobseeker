@@ -38,11 +38,13 @@ class Orchestrator:
         )
 
     def route_request(self, user_query, history_text):
-        chain = self.prompt_template | self.llm
-        response = chain.invoke({
-            "query": user_query,
-            "chat_chain": history_text
-        })
+        full_prompt = f"""
+        Berikut adalah riwayat percakapan sebelumnya:
+        {history_text}
+
+        Pertanyaan baru user: {user_query}
+        """
+        response = self.llm.invoke(full_prompt)
         return response.content
 
     def route_query(self, user_query: str) -> str:

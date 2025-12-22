@@ -56,14 +56,14 @@ if menu == "Smart Chat (SQL & RAG)":
             st.markdown(prompt)
             
         context_messages = st.session_state.messages[-10:]
-        history_string = ""
+        history_text = ""
         for m in context_messages:
             role_name = "User" if m["role"] == "user" else "Assistant"
             history_string += f"{role_name}: {m['content']}\n"
         # 3. KIRIM KE AGENT
         with st.chat_message("assistant"):
             # Kirim prompt DAN history_string
-            response = agents["orchestrator"].route_request(prompt, history_string)
+            response = agents["orchestrator"].route_request(prompt, history_text)
             st.markdown(response)
 
         # 4. Simpan respon assistant ke state
@@ -177,6 +177,7 @@ if menu == "Mock Interview (Voice)":
             os.remove("temp_interview.mp3")
             st.rerun() # Refresh tampilan untuk memunculkan pertanyaan baru
             st.success(f"You {user_text}")
+
 
 
 

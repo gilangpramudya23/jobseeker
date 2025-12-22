@@ -38,7 +38,7 @@ class Orchestrator:
         )
 
 
-    def route_query(self, user_query: str, conversation_history: str = "") -> str:
+    def route_query(self, user_query: str, conversation_history: str = None) -> str:
         """
         Routes the user query to the appropriate agent.
         
@@ -50,6 +50,10 @@ class Orchestrator:
             str: The agent's response
         """
         logger.info(f"Orchestrator received query: {user_query}")
+        
+        # Use empty string if no history provided
+        if conversation_history is None:
+            conversation_history = "No previous conversation."
         
         # Determine intent with history context
         chain = self.prompt | self.llm | StrOutputParser()
@@ -70,7 +74,7 @@ class Orchestrator:
             # Fallback to RAG if unsure
             logger.warning(f"Unclear intent '{intent}', defaulting to RAG Agent.")
             return self.rag_agent.run(user_query, conversation_history)
-
+            
 if __name__ == "__main__":
     orchestrator = Orchestrator()
             

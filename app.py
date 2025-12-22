@@ -124,31 +124,31 @@ if menu == "Mock Interview (Voice)":
     )
 
     if audio:
-        with st.spinner("AI is listening..."):
-            # 1. Simpan audio bytes ke file sementara
-            with open("temp.mp3", "wb") as f:
-                f.write(audio['bytes'])
-            
+        # 1. Simpan audio bytes ke file sementara
+        with open("temp.mp3", "wb") as f:
+            f.write(audio['bytes'])
+
             # 2. Transcribe Suara ke Teks (Whisper)
             client = openai.OpenAI()
             audio_file = open("temp.mp3", "rb")
             transcript = client.audio.transcriptions.create(
-                model="whisper-1", 
+                model="whisper-1",
                 file=audio_file
             )
             user_text = transcript.text
-            
-            st.success(f"You: {user_text}")
+
+            st.sucess(f"You {user_text}")
 
             # 3. Kirim ke Agent
             response = agents["interview"].get_response(
-                st.session_state.int_history, 
+                st.session_state.int_history,
                 user_text
             )
-            
+
             # 4. Update History & Rerun
             st.session_state.int_history += f"Candidate: {user_text}\nAgent: {response}\n"
             st.session_state.last_q = response
             st.rerun()
+
 
 

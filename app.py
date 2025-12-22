@@ -148,7 +148,9 @@ if menu == "Mock Interview (Voice)":
             # 4. Update History & Rerun
             st.session_state.int_history += f"Candidate: {user_text}\nAgent: {response}\n"
             st.session_state.last_q = response
+            os.remove("temp.mp3")
             st.rerun()
+
 
 
 

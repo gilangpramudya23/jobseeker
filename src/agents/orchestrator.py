@@ -37,50 +37,40 @@ class Orchestrator:
             Respond with ONLY the category name."""
         )
 
-    def route_request(self, user_query, history_text):
-        full_prompt = f"""
-        Berikut adalah riwayat percakapan sebelumnya:
-        {history_text}
 
-        Pertanyaan baru user: {user_query}
+    def route_query(self, user_query: str, conversation_history: str = "") -> str:
         """
-        response = self.llm.invoke(full_prompt)
-        return response.content
-
-    def route_query(self, user_query: str) -> str:
-        try:
-            # 1. Tentukan rute
-            router_chain = self.router_prompt | self.llm | StrOutputParser()
-            decision = router_chain.invoke({"query": user_query}).strip()
+        Routes the user query to the appropriate agent.
+        
+        Args:
+            user_query (str): The current user question
+            conversation_history (str): Previous conversation context
             
-            logger.info(f"Routing Decision: {decision}")
+        Returns:
+            str: The agent's response
+        """
+        logger.info(f"Orchestrator received query: {user_query}")
+        
+        # Determine intent with history context
+        chain = self.prompt | self.llm | StrOutputParser()
+        intent = chain.invoke(
+            {"query": user_query, "history": conversation_history},
+            config={"callbacks": [self.langfuse_handler]}
+        ).strip().upper()
+        
+        logger.info(f"Orchestrator determined intent: {intent}")
+        
+        if "SQL" in intent:
+            logger.info("Routing to SQL Agent...")
+            return self.sql_agent.run(user_query, conversation_history)
+        elif "RAG" in intent:
+            logger.info("Routing to RAG Agent...")
+            return self.rag_agent.run(user_query, conversation_history)
+        else:
+            # Fallback to RAG if unsure
+            logger.warning(f"Unclear intent '{intent}', defaulting to RAG Agent.")
+            return self.rag_agent.run(user_query, conversation_history)
 
-            # 2. Eksekusi berdasarkan rute
-            if "USE_SQL" in decision:
-                return self.sql_agent.run(user_query)
-            
-            elif "USE_RAG" in decision:
-                return self.rag_agent.run(user_query)
-            
-            else:
-                # JIKA CHAT/GENERAL: AI menjawab langsung dengan kepribadian yang ramah
-                logger.info("Handling as General Chat")
-                chat_prompt = ChatPromptTemplate.from_template(
-                    """You are a helpful and friendly AI Career Assistant. 
-                    Even if the user asks something unrelated to careers, respond politely and naturally. 
-                    
-                    USER INPUT: {query}
-                    
-                    INSTRUCTION:
-                    - Respond in the SAME LANGUAGE as the user.
-                    - Be professional but warm.
-                    - Do not say 'I am only for jobs'. Just help the user.
-                    """
-                )
-                chat_chain = chat_prompt | self.llm | StrOutputParser()
-                return chat_chain.invoke({"query": user_query})
-
-        except Exception as e:
-            logger.error(f"Orchestrator Error: {str(e)}")
-            return "Maaf, ada kendala teknis. Bisa ulangi pertanyaannya?"
+if __name__ == "__main__":
+    orchestrator = Orchestrator()
             

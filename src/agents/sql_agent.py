@@ -62,42 +62,16 @@ class SQLAgent:
             handle_parsing_errors=True
         )
 
-    def run(self, query: str, conversation_history: str = None) -> str:
-        """
-        Run the agent with the given query and conversation history.
-        
-        Args:
-            query (str): The natural language query to ask the database.
-            conversation_history (str): Previous conversation for context.
-            
-        Returns:
-            str: The agent's response.
-        """
+    def run(self, query: str) -> str:
         try:
-            # Enhance query with history context if available
-            if conversation_history:
-                enhanced_query = f"""
-Previous conversation context:
-{conversation_history}
-
-Current question: {query}
-
-Please answer the current question using the database. If the question references previous conversation (like "what about...", "how many of those...", etc.), use the context to understand what they're referring to.
-"""
-            else:
-                enhanced_query = query
-            
-            response = self.agent_executor.invoke(
-                {"input": enhanced_query}, 
-                config={"callbacks": [self.langfuse_handler]}
-            )
-            
-            # The response format might vary based on the agent version
+            # Hapus callback langfuse sementara untuk memastikan tidak ada error lain
+            response = self.agent_executor.invoke({"input": query})
             if isinstance(response, dict) and "output" in response:
                 return response["output"]
             return str(response)
         except Exception as e:
-            return f"Error executing query: {str(e)}"
+            logger.error(f"Error executing query: {str(e)}")
+            return f"Error database: {str(e)}"
 
 if __name__ == "__main__":
     agent = SQLAgent()

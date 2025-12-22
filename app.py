@@ -119,38 +119,44 @@ if menu == "Mock Interview (Voice)":
 
     # Widget Mic Recorder (Ini yang muncul di browser)
     audio = mic_recorder(
-        start_prompt="Click to Speak 🎙️",
-        stop_prompt="Stop & Send 📤",
+        start_prompt="Mulai Bicara 🎙️",
+        stop_prompt="Kirim Ke Interviewer 📤",
         key='interview_mic'
     )
 
     if audio:
-        # 1. Simpan audio bytes ke file sementara
-        with open("temp.mp3", "wb") as f:
-            f.write(audio['bytes'])
-
-            # 2. Transcribe Suara ke Teks (Whisper)
+        audio_bytes = audio['bytes']
+        
+        # Cek apakah audio ini baru atau duplikat dari rerun sebelumnya
+        if "last_processed_audio" not in st.session_state or st.session_state.last_processed_audio != audio_bytes:
+            
+            # --- PROSES MULAI DI SINI ---
+            with open("temp_interview.mp3", "wb") as f:
+                f.write(audio_bytes)
+            
             client = openai.OpenAI()
-            audio_file = open("temp.mp3", "rb")
-            transcript = client.audio.transcriptions.create(
-                model="whisper-1",
-                file=audio_file
-            )
+            with open("temp_interview.mp3", "rb") as audio_file:
+                transcript = client.audio.transcriptions.create(
+                    model="whisper-1", 
+                    file=audio_file
+                )
             user_text = transcript.text
-
-            st.success(f"You {user_text}")
-
-            # 3. Kirim ke Agent
+            
+            # Panggil agent untuk jawaban
             response = agents["interview"].get_response(
-                st.session_state.int_history,
+                st.session_state.interview_history, 
                 user_text
             )
-
-            # 4. Update History & Rerun
-            st.session_state.int_history += f"Candidate: {user_text}\nAgent: {response}\n"
-            st.session_state.last_q = response
-            os.remove("temp.mp3")
+            
+            
+            # Simpan ke history dan tandai audio sudah diproses
+            st.session_state.interview_history += f"Candidate: {user_text}\nInterviewer: {response}\n"
+            st.session_state.current_q = response
+            st.session_state.last_processed_audio = audio_bytes # KUNCI PENTING
+            
+            os.remove("temp_interview.mp3")
             st.rerun()
+
 
 
 

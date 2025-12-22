@@ -97,42 +97,71 @@ class RAGAgent:
             logger.error(f"Error during retrieval: {e}")
             return []
 
-    def run(self, query: str) -> str:
+    def run(self, query: str, conversation_history: str = "") -> str:
         """
         End-to-end RAG run: Retrieve -> Generate.
+        Enhanced to handle both specific database queries and general career questions.
+        Now with conversational memory support.
+        
+        Args:
+            query (str): Current user question
+            conversation_history (str): Previous conversation context
+            
+        Returns:
+            str: AI response
         """
         logger.info(f"RAG Agent received query: {query}")
         
-        # 1. Retrieve
+        # 1. Retrieve relevant documents
         docs = self.retrieve_documents(query)
         
-        if not docs:
-            context_text = "No specific data found in the database. Please answer using your general knowledge."
-        else:
+        # 2. Prepare context
+        if docs:
             context_text = "\n\n".join([doc.page_content for doc in docs])
+            logger.info(f"Found {len(docs)} relevant documents")
+        else:
+            context_text = ""
+            logger.info("No specific documents found in database")
         
-        flexible_prompt = ChatPromptTemplate.from_template(
-            """You are a professional Career Assistant.
-            CONTEXT FROM DATABASE:
-            {context}
-            USER QUESTION:
-            {question}
-            INSTRUCTIONS:
-            1. LANGUAGE CONSISTENCY: Detect the language of the user's question. ALWAYS respond in the SAME LANGUAGE as the user (e.g., if asked in Indonesian, respond in Indonesian; if asked in English, respond in English).
-            2. SMART RETRIEVAL: If the DATABASE CONTEXT contains relevant information, use it to provide a detailed answer.
-            3. NO-FAIL POLICY: If the CONTEXT is empty, irrelevant, or does not contain specific data, DO NOT say "I don't know", "I don't have enough information", or "No data found".
-            4. FALLBACK STRATEGY: In case of empty context, provide a high-quality response based on your general knowledge as a career expert. Offer helpful suggestions, industry trends, or general career advice related to the user's query.
-            5. GENERAL INTERACTION: For greetings (Hi, Hello), introductions, or general small talk, respond naturally and warmly without being restricted by the database context.
-            6. JOB SPECIFIC QUERIES: For specific job opening questions, check the context first. If not found, explain that while specific local listings aren't available right now, you can provide general advice on how to apply for such roles.
-            7. TONE: Maintain a friendly, professional, and encouraging persona at all times.
-            YOUR RESPONSE:
-            """
+        # 3. Create smart prompt that handles both scenarios with history
+        smart_prompt = ChatPromptTemplate.from_template(
+            """You are a professional and helpful AI Career Assistant.
+
+CONVERSATION HISTORY:
+{history}
+
+CONTEXT FROM DATABASE:
+{context}
+
+CURRENT USER QUESTION:
+{question}
+
+IMPORTANT INSTRUCTIONS:
+1. ALWAYS respond in the SAME language as the user's question (Bahasa Indonesia or English)
+2. Use CONVERSATION HISTORY to understand context and references (like "it", "that", "the one you mentioned")
+3. If CONTEXT contains relevant information → use it to answer the question
+4. If CONTEXT is empty or not relevant → still answer using your general knowledge as an AI Career Expert
+5. NEVER say "I don't have enough information" or "No data available"
+6. For general questions like greetings, introductions, or general career advice → respond naturally and helpfully
+7. For specific questions about job listings → search the context first, if not found provide useful general advice
+8. If user asks follow-up questions, reference previous answers from history
+9. Tone: friendly, professional, and encouraging
+
+YOUR RESPONSE:"""
         )
         
-        # 3. Generate
-        chain = flexible_prompt | self.llm | StrOutputParser()
+        # 4. Generate response
+        chain = smart_prompt | self.llm | StrOutputParser()
         
-        response = chain.invoke({"context": context_text, "question": query})
+        response = chain.invoke(
+            {
+                "context": context_text, 
+                "question": query,
+                "history": conversation_history if conversation_history else "No previous conversation."
+            },
+            config={"callbacks": [self.langfuse_handler]}
+        )
+        
         return response
 
 if __name__ == "__main__":

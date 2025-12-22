@@ -62,7 +62,7 @@ class SQLAgent:
             handle_parsing_errors=True
         )
 
-    def run(self, query: str, conversation_history: str = "") -> str:
+    def run(self, query: str, conversation_history: str = None) -> str:
         """
         Run the agent with the given query and conversation history.
         
@@ -82,8 +82,7 @@ Previous conversation context:
 
 Current question: {query}
 
-Please answer the current question using the database.
-If the question references previous conversation (like "what about...", "how many of those...", etc.), use the context to understand what they're referring to.
+Please answer the current question using the database. If the question references previous conversation (like "what about...", "how many of those...", etc.), use the context to understand what they're referring to.
 """
             else:
                 enhanced_query = query

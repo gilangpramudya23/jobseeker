@@ -111,8 +111,8 @@ if menu == "Mock Interview (Voice)":
     st.header("🎤 AI Mock Interview")
     
     # Init State
-    if "int_history" not in st.session_state:
-        st.session_state.int_history = "Agent: Hello! Let's start. Tell me about yourself.\n"
+    if "interview_history" not in st.session_state:
+        st.session_state.interview_history = "Agent: Hello! Let's start. Tell me about yourself.\n"
         st.session_state.last_q = "Hello! Let's start. Tell me about yourself."
 
     st.write(f"**Interviewer:** {st.session_state.last_q}")
@@ -156,6 +156,7 @@ if menu == "Mock Interview (Voice)":
             
             os.remove("temp_interview.mp3")
             st.rerun()
+
 
 
 

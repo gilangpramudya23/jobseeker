@@ -37,7 +37,13 @@ class Orchestrator:
             Respond with ONLY the category name."""
         )
 
-
+    def route_request(self, user_query, history_text):
+        chain = self.prompt_template | self.llm
+        response = chain.invoke({
+            "query": user_query,
+            "chat_chain": history_text
+        })
+        return response.content
 
     def route_query(self, user_query: str) -> str:
         try:
@@ -76,10 +82,3 @@ class Orchestrator:
             logger.error(f"Orchestrator Error: {str(e)}")
             return "Maaf, ada kendala teknis. Bisa ulangi pertanyaannya?"
             
-    def route_request(self, user_query, history_text):
-        chain = self.prompt_template | self.llm
-        response = chain.invoke({
-            "query": user_query,
-            "chat_history": history_text
-        })
-        return response.content

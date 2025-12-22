@@ -110,22 +110,24 @@ import openai
 if menu == "Mock Interview (Voice)":
     st.header("🎤 AI Mock Interview")
     
-    # Init State
+    # 1. Inisialisasi State (Hanya jalan sekali di awal)
     if "interview_history" not in st.session_state:
-        st.session_state.interview_history = "Agent: Hello! Let's start. Tell me about yourself.\n"
-        st.session_state.last_q = "Hello! Let's start. Tell me about yourself."
+        st.session_state.interview_history = "AI Interviewer: Hello! Let's start. Tell me about yourself.\n"
+        st.session_state.current_q = "Hello! Let's start. Tell me about yourself."
+    
+    # 2. Tampilkan Pertanyaan AI
+    st.info(f"**AI Interviewer:** {st.session_state.current_q}")
 
-    st.write(f"**Interviewer:** {st.session_state.last_q}")
-
-    # Widget Mic Recorder (Ini yang muncul di browser)
-    audio = mic_recorder(
+    # 3. Widget Mic
+    audio_data = mic_recorder(
         start_prompt="Mulai Bicara 🎙️",
-        stop_prompt="Kirim Ke Interviewer 📤",
-        key='interview_mic'
+        stop_prompt="Kirim Jawaban ✅",
+        key='interview_mic_unique' 
     )
 
-    if audio:
-        audio_bytes = audio['bytes']
+    # 4. Logika Pemrosesan (Taruh tepat di bawah widget mic)
+    if audio_data:
+        audio_bytes = audio_data['bytes']
         
         # Cek apakah audio ini baru atau duplikat dari rerun sebelumnya
         if "last_processed_audio" not in st.session_state or st.session_state.last_processed_audio != audio_bytes:
@@ -155,7 +157,8 @@ if menu == "Mock Interview (Voice)":
             st.session_state.last_processed_audio = audio_bytes # KUNCI PENTING
             
             os.remove("temp_interview.mp3")
-            st.rerun()
+            st.rerun() # Refresh tampilan untuk memunculkan pertanyaan baru
+
 
 
 

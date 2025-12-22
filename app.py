@@ -107,7 +107,7 @@ from streamlit_mic_recorder import mic_recorder
 import openai
 
 # --- DI DALAM KONDISI MENU INTERVIEW ---
-elif menu == "Mock Interview (Voice)":
+if menu == "Mock Interview (Voice)":
     st.header("🎤 AI Mock Interview")
     
     # 1. Inisialisasi State (Hanya jalan sekali di awal)
@@ -157,6 +157,7 @@ elif menu == "Mock Interview (Voice)":
             
             os.remove("temp_interview.mp3")
             st.rerun() # Refresh tampilan untuk memunculkan pertanyaan baru
+
 
 
 

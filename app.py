@@ -144,13 +144,15 @@ if menu == "Mock Interview (Voice)":
                 )
             user_text = transcript.text
 
-            st.chat_message("user").write(user_text)
+            # SIMPAN PESAN AI KE STATE
+            st.session_state.messages.append({"role": "user", "content": user_text})
             
             # Panggil agent untuk jawaban
             response = agents["interview"].get_response(
                 st.session_state.interview_history, 
                 user_text
             )
+            st.session_state.messages.append({"role": "assistant", "content": response})
             
             # Simpan ke history dan tandai audio sudah diproses
             st.session_state.interview_history += f"Candidate: {user_text}\nInterviewer: {response}\n"
@@ -159,6 +161,7 @@ if menu == "Mock Interview (Voice)":
             
             os.remove("temp_interview.mp3")
             st.rerun() # Refresh tampilan untuk memunculkan pertanyaan baru
+
 
 
 

@@ -106,50 +106,58 @@ elif menu == "Cover Letter Generator":
 from streamlit_mic_recorder import mic_recorder
 import openai
 
-if menu == "Mock Interview (Voice)":
+# --- DI DALAM KONDISI MENU INTERVIEW ---
+elif menu == "Mock Interview (Voice)":
     st.header("🎤 AI Mock Interview")
     
-    # Init State
-    if "int_history" not in st.session_state:
-        st.session_state.int_history = "Agent: Hello! Let's start. Tell me about yourself.\n"
-        st.session_state.last_q = "Hello! Let's start. Tell me about yourself."
+    # 1. Inisialisasi State (Hanya jalan sekali di awal)
+    if "interview_history" not in st.session_state:
+        st.session_state.interview_history = "Interviewer: Hello! Let's start. Tell me about yourself.\n"
+        st.session_state.current_q = "Hello! Let's start. Tell me about yourself."
+    
+    # 2. Tampilkan Pertanyaan AI
+    st.info(f"**AI Interviewer:** {st.session_state.current_q}")
 
-    st.write(f"**Interviewer:** {st.session_state.last_q}")
-
-    # Widget Mic Recorder (Ini yang muncul di browser)
-    audio = mic_recorder(
-        start_prompt="Click to Speak 🎙️",
-        stop_prompt="Stop & Send 📤",
-        key='interview_mic'
+    # 3. Widget Mic
+    audio_data = mic_recorder(
+        start_prompt="Mulai Rekam 🎙️",
+        stop_prompt="Kirim Jawaban ✅",
+        key='interview_mic_unique' 
     )
 
-    if audio:
-        # 1. Simpan audio bytes ke file sementara
-        with open("temp.mp3", "wb") as f:
-            f.write(audio['bytes'])
-
-            # 2. Transcribe Suara ke Teks (Whisper)
+    # 4. Logika Pemrosesan (Taruh tepat di bawah widget mic)
+    if audio_data:
+        audio_bytes = audio_data['bytes']
+        
+        # Cek apakah audio ini baru atau duplikat dari rerun sebelumnya
+        if "last_processed_audio" not in st.session_state or st.session_state.last_processed_audio != audio_bytes:
+            
+            # --- PROSES MULAI DI SINI ---
+            with open("temp_interview.mp3", "wb") as f:
+                f.write(audio_bytes)
+            
             client = openai.OpenAI()
-            audio_file = open("temp.mp3", "rb")
-            transcript = client.audio.transcriptions.create(
-                model="whisper-1",
-                file=audio_file
-            )
+            with open("temp_interview.mp3", "rb") as audio_file:
+                transcript = client.audio.transcriptions.create(
+                    model="whisper-1", 
+                    file=audio_file
+                )
             user_text = transcript.text
-
-            st.success(f"You {user_text}")
-
-            # 3. Kirim ke Agent
-            response = agents["interview"].get_response(
-                st.session_state.int_history,
+            
+            # Panggil agent untuk jawaban
+            response = agents["interview"].get_next_question(
+                st.session_state.interview_history, 
                 user_text
             )
+            
+            # Simpan ke history dan tandai audio sudah diproses
+            st.session_state.interview_history += f"Candidate: {user_text}\nInterviewer: {response}\n"
+            st.session_state.current_q = response
+            st.session_state.last_processed_audio = audio_bytes # KUNCI PENTING
+            
+            os.remove("temp_interview.mp3")
+            st.rerun() # Refresh tampilan untuk memunculkan pertanyaan baru
 
-            # 4. Update History & Rerun
-            st.session_state.int_history += f"Candidate: {user_text}\nAgent: {response}\n"
-            st.session_state.last_q = response
-            os.remove("temp.mp3")
-            st.rerun()
 
 
 

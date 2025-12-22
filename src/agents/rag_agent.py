@@ -97,7 +97,7 @@ class RAGAgent:
             logger.error(f"Error during retrieval: {e}")
             return []
 
-    def run(self, query: str, conversation_history: str = "") -> str:
+    def run(self, query: str, conversation_history: str = None) -> str:
         """
         End-to-end RAG run: Retrieve -> Generate.
         Enhanced to handle both specific database queries and general career questions.

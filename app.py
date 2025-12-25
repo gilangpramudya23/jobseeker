@@ -70,19 +70,7 @@ if menu == "Smart Chat":
                 
 # --- 2. CAREER ADVISOR ---
 
-def create_pdf(text):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    
-    # Membersihkan karakter non-latin agar tidak error
-    clean_text = text.encode('latin-1', 'ignore').decode('latin-1')
-    
-    # multi_cell otomatis membungkus teks (wrap text)
-    pdf.multi_cell(0, 10, txt=clean_text)
-    return pdf.output()
-
-if menu == "Career Advisor & CV Analysis":
+elif menu == "Career Advisor & CV Analysis":
     st.header("👨‍💼 Career Consultant")
 
     # 1. Inisialisasi Session State untuk chat Career Advisor
@@ -104,15 +92,6 @@ if menu == "Career Advisor & CV Analysis":
                 # Masukkan hasil laporan ke dalam history chat sebagai pesan awal AI
                 st.session_state.advisor_messages.append({"role": "assistant", "content": report})
             os.remove("temp_cv.pdf")
-            
-        if "current_report" in st.session_state:
-            pdf_data = create_pdf(st.session_state.current_report)
-            st.download_button(
-                label="📥 Download Hasil Analisis (PDF)",
-                data=pdf_data,
-                file_name="Analisis_CV_Report.pdf",
-                mime="applixation/pdf"
-            )
 
     # 2. Tampilkan Riwayat Chat (jika sudah ada analisis)
     
@@ -241,6 +220,7 @@ if menu == "AI Interview Assistant (Voice)":
             os.remove("temp_interview.mp3")
             st.rerun() # Refresh tampilan untuk memunculkan pertanyaan baru
             st.success(f"You {user_text}")
+
 
 
 

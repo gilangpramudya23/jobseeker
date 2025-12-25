@@ -157,123 +157,94 @@ elif menu == "Cover Letter Generator":
 
 from streamlit_mic_recorder import mic_recorder
 import openai
+import os
 
 # --- DI DALAM KONDISI MENU INTERVIEW ---
 if menu == "AI Interview Assistant (Voice)":
-    st.header("AI Interview Assistant")
+    # Header dengan gaya Dashboard
+    st.title("🎙️ AI Career Coach: Interview Room")
+    st.caption("Berlatihlah bicara secara alami. Jawaban Anda akan ditranskripsi dan dianalisis secara otomatis.")
+    st.divider()
 
-    if "interview_log" not in st.session_state:
-        st.session_state.interview_log = []
+    # Layout Kolom: Kiri untuk Chat, Kanan untuk Instruksi/Tips
+    col_main, col_sidebar = st.columns([2, 1])
 
-    for msg in st.session_state.interview_log[-3:]:
-        with st.success(f"**You:** {msg}"):
-            st.write(msg)
-    
-    # 1. Inisialisasi State (Hanya jalan sekali di awal)
+    with col_sidebar:
+        st.subheader("💡 Tips Interview")
+        st.info("""
+        - **Kontak Mata:** Meskipun virtual, tetap fokus pada kamera.
+        - **Metode STAR:** Gunakan (Situation, Task, Action, Result) untuk jawaban teknis.
+        - **Suara Jelas:** Bicara dengan tempo yang tenang.
+        """)
+        
+        if st.button("🔄 Reset Sesi Interview"):
+            # Logika reset state jika dibutuhkan
+            st.session_state.interview_log = []
+            st.session_state.interview_history = "AI Interviewer: Hello! Let's start. Tell me about yourself.\n"
+            st.session_state.current_q = "Hello! Let's start. Tell me about yourself."
+            st.rerun()
+
+    with col_main:
+        # 1. Area Pertanyaan Aktif (Dibuat menonjol)
+        st.markdown("### 🤖 Pertanyaan Saat Ini:")
+        with st.container(border=True):
+            st.subheader(st.session_state.current_q)
+            st.write("---")
+            # Widget Mic ditempatkan tepat di bawah pertanyaan
+            st.write("Klik tombol di bawah untuk merekam jawaban Anda:")
+            audio_data = mic_recorder(
+                start_prompt="Mulai Bicara 🎤",
+                stop_prompt="Selesai & Kirim ✅",
+                key='interview_mic_unique' 
+            )
+
+        # 2. Riwayat Percakapan (Menggunakan st.chat_message agar unik)
+        st.markdown("### 📝 Riwayat Jawaban Anda")
+        if "interview_log" not in st.session_state:
+            st.session_state.interview_log = []
+
+        if not st.session_state.interview_log:
+            st.info("Belum ada jawaban yang terekam.")
+        else:
+            # Tampilkan riwayat dengan gaya chat
+            for i, msg in enumerate(st.session_state.interview_log):
+                with st.chat_message("user"):
+                    st.write(msg)
+
+    # --- LOGIKA FUNGSIONAL (TIDAK BERUBAH) ---
     if "interview_history" not in st.session_state:
         st.session_state.interview_history = "AI Interviewer: Hello! Let's start. Tell me about yourself.\n"
         st.session_state.current_q = "Hello! Let's start. Tell me about yourself."
-    
-    # 2. Tampilkan Pertanyaan AI
-    st.info(f"**AI Interviewer:** {st.session_state.current_q}")
 
-    # 3. Widget Mic
-    audio_data = mic_recorder(
-        start_prompt="Mulai Bicara 🎙️",
-        stop_prompt="Kirim Jawaban ✅",
-        key='interview_mic_unique' 
-    )
-
-    # 4. Logika Pemrosesan (Taruh tepat di bawah widget mic)
     if audio_data:
         audio_bytes = audio_data['bytes']
         
-        # Cek apakah audio ini baru atau duplikat dari rerun sebelumnya
         if "last_processed_audio" not in st.session_state or st.session_state.last_processed_audio != audio_bytes:
-            
-            # --- PROSES MULAI DI SINI ---
-            with open("temp_interview.mp3", "wb") as f:
-                f.write(audio_bytes)
-            
-            client = openai.OpenAI()
-            with open("temp_interview.mp3", "rb") as audio_file:
-                transcript = client.audio.transcriptions.create(
-                    model="whisper-1", 
-                    file=audio_file
+            with st.status("Sedang memproses suara Anda...", expanded=True) as status:
+                st.write("Mentranskripsi audio (Whisper)...")
+                with open("temp_interview.mp3", "wb") as f:
+                    f.write(audio_bytes)
+                
+                client = openai.OpenAI()
+                with open("temp_interview.mp3", "rb") as audio_file:
+                    transcript = client.audio.transcriptions.create(
+                        model="whisper-1", 
+                        file=audio_file
+                    )
+                user_text = transcript.text
+                st.session_state.interview_log.append(user_text)
+
+                st.write("Menganalisis jawaban & menyiapkan pertanyaan baru...")
+                response = agents["interview"].get_response(
+                    st.session_state.interview_history, 
+                    user_text
                 )
-            user_text = transcript.text
-
-            st.session_state.interview_log.append(user_text)
+                
+                st.session_state.interview_history += f"Candidate: {user_text}\nInterviewer: {response}\n"
+                st.session_state.current_q = response
+                st.session_state.last_processed_audio = audio_bytes
+                
+                os.remove("temp_interview.mp3")
+                status.update(label="Proses selesai!", state="complete", expanded=False)
             
-            # Panggil agent untuk jawaban
-            response = agents["interview"].get_response(
-                st.session_state.interview_history, 
-                user_text
-            )
-            
-            
-            # Simpan ke history dan tandai audio sudah diproses
-            st.session_state.interview_history += f"Candidate: {user_text}\nInterviewer: {response}\n"
-            st.session_state.current_q = response
-            st.session_state.last_processed_audio = audio_bytes # KUNCI PENTING
-            
-            os.remove("temp_interview.mp3")
-            st.rerun() # Refresh tampilan untuk memunculkan pertanyaan baru
-            st.success(f"You {user_text}")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+            st.rerun()

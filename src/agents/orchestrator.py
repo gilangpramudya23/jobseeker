@@ -47,11 +47,12 @@ class Orchestrator:
         response = self.llm.invoke(full_prompt)
         return response.content
 
-    def route_query(self, user_query: str) -> str:
+    def route_query(self, user_query: str, history_text: str = "") -> str:
         try:
             # 1. Tentukan rute
             router_chain = self.router_prompt | self.llm | StrOutputParser()
-            decision = router_chain.invoke({"query": user_query}).strip()
+            decision = router_chain.invoke({"query": user_query},
+                                          "history": hisotry_text).strip()
             
             logger.info(f"Routing Decision: {decision}")
 
@@ -60,6 +61,7 @@ class Orchestrator:
                 return self.sql_agent.run(user_query)
             
             elif "USE_RAG" in decision:
+                full_query = f"Context:\n{history_text}\n\nQuestions:{user_query}"
                 return self.rag_agent.run(user_query)
             
             else:
@@ -68,6 +70,9 @@ class Orchestrator:
                 chat_prompt = ChatPromptTemplate.from_template(
                     """You are a helpful and friendly AI Career Assistant. 
                     Even if the user asks something unrelated to careers, respond politely and naturally. 
+
+                    HISTORY:
+                    {history_text}
                     
                     USER INPUT: {query}
                     
@@ -78,7 +83,8 @@ class Orchestrator:
                     """
                 )
                 chat_chain = chat_prompt | self.llm | StrOutputParser()
-                return chat_chain.invoke({"query": user_query})
+                return chat_chain.invoke({"query": user_query,
+                                         "historyy": history_text})
 
         except Exception as e:
             logger.error(f"Orchestrator Error: {str(e)}")

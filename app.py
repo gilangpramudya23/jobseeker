@@ -45,28 +45,45 @@ if menu == "Smart Chat (SQL & RAG)":
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
+    # Tampilkan riwayat chat
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
     if prompt := st.chat_input("Contoh: Berapa jumlah lowongan Python? atau Apa syarat Software Engineer?"):
+        # 1. Simpan pesan user ke session state
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
 
+        # 2. BUAT HISTORY TEXT (Mengambil 5 pesan terakhir agar efisien)
+        # Kita gabungkan role dan content menjadi satu string panjang
+        context_messages = st.session_state.messages[-6:] # Mengambil history terbaru
+        history_text = ""
+        for m in context_messages:
+            role_label = "User" if m["role"] == "user" else "Assistant"
+            history_text += f"{role_label}: {m['content']}\n"
+
+        # 3. Panggil Orchestrator dengan Prompt DAN History
         with st.chat_message("assistant"):
             with st.spinner("Berpikir..."):
-                response = agents["orchestrator"].route_query(prompt)
+                # Pastikan fungsi di orchestrator.py menerima dua parameter (prompt, history_text)
+                # Jika nama fungsi Anda route_query, pastikan di orchestrator.py juga route_query
+                response = agents["orchestrator"].route_query(prompt, history_text)
                 st.markdown(response)
+        
+        # 4. Simpan respon assistant ke session state
         st.session_state.messages.append({"role": "assistant", "content": response})
+        
+        # Rerun untuk memastikan tampilan sinkron
+        st.rerun()
     
-    # Add clear chat button
+    # Tombol Clear Chat
     if len(st.session_state.messages) > 0:
-        col1, col2 = st.columns([6, 1])
-        with col2:
-            if st.button("🗑️ Clear Chat"):
-                st.session_state.messages = []
-                st.rerun()
+        st.divider() # Garis pemisah agar rapi
+        if st.button("🗑️ Clear Chat"):
+            st.session_state.messages = []
+            st.rerun()
                 
 # --- 2. CAREER ADVISOR ---
 elif menu == "Career Advisor & CV Analysis":
@@ -209,6 +226,7 @@ if menu == "Mock Interview (Voice)":
             os.remove("temp_interview.mp3")
             st.rerun() # Refresh tampilan untuk memunculkan pertanyaan baru
             st.success(f"You {user_text}")
+
 
 
 

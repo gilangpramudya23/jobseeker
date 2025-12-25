@@ -112,6 +112,7 @@ if menu == "Career Advisor & CV Analysis":
                 data=pdf_data,
                 file_name="Analisis_CV_Report.pdf",
                 mime="applixation/pdf"
+            )
 
     # 2. Tampilkan Riwayat Chat (jika sudah ada analisis)
     
@@ -240,6 +241,7 @@ if menu == "AI Interview Assistant (Voice)":
             os.remove("temp_interview.mp3")
             st.rerun() # Refresh tampilan untuk memunculkan pertanyaan baru
             st.success(f"You {user_text}")
+
 
 
 

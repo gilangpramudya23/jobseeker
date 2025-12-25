@@ -40,33 +40,37 @@ st.sidebar.info("Gunakan sidebar untuk berpindah antar fungsi agent.")
 # --- 1. SMART CHAT (ORCHESTRATOR) ---
 if menu == "Smart Chat":
     st.header("💬 Smart Career Chat")
-    st.write("Tanyakan seputar karir kamu.")
     
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
+    # Tampilkan chat history di UI
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-    if prompt := st.chat_input("Contoh: Berapa jumlah lowongan Python? atau Apa syarat Software Engineer?"):
+    if prompt := st.chat_input("Tanyakan sesuatu..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
 
+        # --- BAGIAN HISTORY BARU ---
+        # Ambil 5 pesan terakhir untuk dijadikan memori (agar tidak boros token)
+        recent_messages = st.session_state.messages[-6:] 
+        history_text = ""
+        for m in recent_messages[:-1]: # Kecuali pesan terakhir yang baru saja diinput
+            role = "User" if m["role"] == "user" else "Assistant"
+            history_text += f"{role}: {m['content']}\n"
+        # ---------------------------
+
         with st.chat_message("assistant"):
             with st.spinner("Berpikir..."):
-                response = agents["orchestrator"].route_query(prompt)
+                # Kirim prompt DAN history_text ke orchestrator
+                response = agents["orchestrator"].route_query(prompt, history_text)
                 st.markdown(response)
+        
         st.session_state.messages.append({"role": "assistant", "content": response})
-    
-    # Add clear chat button
-    if len(st.session_state.messages) > 0:
-        col1, col2 = st.columns([6, 1])
-        with col2:
-            if st.button("🗑️ Clear Chat"):
-                st.session_state.messages = []
-                st.rerun()
+        st.rerun()
                 
 # --- 2. CAREER ADVISOR ---
 
@@ -220,6 +224,7 @@ if menu == "AI Interview Assistant (Voice)":
             os.remove("temp_interview.mp3")
             st.rerun() # Refresh tampilan untuk memunculkan pertanyaan baru
             st.success(f"You {user_text}")
+
 
 
 

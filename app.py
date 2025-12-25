@@ -28,19 +28,19 @@ agents = init_agents()
 # Sidebar Navigasi
 st.sidebar.title("🚀 Career AI Agent")
 menu = st.sidebar.radio("Pilih Fitur:", [
-    "Smart Chat (SQL & RAG)", 
+    "Smart Chat", 
     "Career Advisor & CV Analysis", 
     "Cover Letter Generator", 
-    "Mock Interview (Voice)"
+    "AI Interview Assistant (Voice)"
 ])
 
 st.sidebar.divider()
 st.sidebar.info("Gunakan sidebar untuk berpindah antar fungsi agent.")
 
 # --- 1. SMART CHAT (ORCHESTRATOR) ---
-if menu == "Smart Chat (SQL & RAG)":
+if menu == "Smart Chat":
     st.header("💬 Smart Career Chat")
-    st.write("Tanyakan data statistik (SQL) atau informasi deskriptif lowongan (RAG).")
+    st.write("Tanyakan seputar karir kamu.")
     
     if "messages" not in st.session_state:
         st.session_state.messages = []
@@ -172,8 +172,8 @@ from streamlit_mic_recorder import mic_recorder
 import openai
 
 # --- DI DALAM KONDISI MENU INTERVIEW ---
-if menu == "Mock Interview (Voice)":
-    st.header("🎤 AI Mock Interview")
+if menu == "AI Interview Assistant (Voice)":
+    st.header("AI Interview Assistant")
 
     if "interview_log" not in st.session_state:
         st.session_state.interview_log = []
@@ -233,6 +233,7 @@ if menu == "Mock Interview (Voice)":
             os.remove("temp_interview.mp3")
             st.rerun() # Refresh tampilan untuk memunculkan pertanyaan baru
             st.success(f"You {user_text}")
+
 
 
 

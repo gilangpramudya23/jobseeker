@@ -91,6 +91,13 @@ elif menu == "Career Advisor & CV Analysis":
                 # Masukkan hasil laporan ke dalam history chat sebagai pesan awal AI
                 st.session_state.advisor_messages.append({"role": "assistant", "content": report})
             os.remove("temp_cv.pdf")
+            
+            st.download_button(
+                label="📥 Download Laporan",
+                data=report,
+                file_name="career_consultation_report.pdf"
+                mime="text/plain"
+            )
 
     # 2. Tampilkan Riwayat Chat (jika sudah ada analisis)
     for message in st.session_state.advisor_messages:
@@ -219,6 +226,7 @@ if menu == "AI Interview Assistant (Voice)":
             os.remove("temp_interview.mp3")
             st.rerun() # Refresh tampilan untuk memunculkan pertanyaan baru
             st.success(f"You {user_text}")
+
 
 
 

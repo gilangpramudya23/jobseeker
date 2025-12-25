@@ -73,24 +73,29 @@ if menu == "Smart Chat (SQL & RAG)":
 elif menu == "Career Advisor & CV Analysis":
     st.header("👨‍💼 Career Consultant")
 
-    # 1. Inisialisasi Session State untuk chat Career Advisor
     if "advisor_messages" not in st.session_state:
         st.session_state.advisor_messages = []
 
-    uploaded_file = st.file_uploader("Upload CV kamu (PDF)", type=["pdf"])
+    # Update: Tambahkan format image pada type
+    uploaded_file = st.file_uploader("Upload CV (PDF, JPG, PNG)", type=["pdf", "jpg", "png", "jpeg"])
     
     if uploaded_file:
-        # Simpan file sementara
-        with open("temp_cv.pdf", "wb") as f:
+        # Mendapatkan ekstensi file
+        file_extension = uploaded_file.name.split('.')[-1].lower()
+        temp_filename = f"temp_cv.{file_extension}"
+        
+        with open(temp_filename, "wb") as f:
             f.write(uploaded_file.getbuffer())
         
         if st.button("Analisis CV & Cari Lowongan"):
-            with st.spinner("Menganalisis profil kamu..."):
-                report = agents["advisor"].analyze_and_recommend("temp_cv.pdf")
-                
-                # Masukkan hasil laporan ke dalam history chat sebagai pesan awal AI
+            with st.spinner("Membaca dan menganalisis dokumen..."):
+                # Kirim file ke agent (Agent akan menangani OCR di dalamnya)
+                report = agents["advisor"].analyze_and_recommend(temp_filename)
                 st.session_state.advisor_messages.append({"role": "assistant", "content": report})
-            os.remove("temp_cv.pdf")
+            
+            # Bersihkan file setelah diproses
+            if os.path.exists(temp_filename):
+                os.remove(temp_filename)
 
     # 2. Tampilkan Riwayat Chat (jika sudah ada analisis)
     for message in st.session_state.advisor_messages:
@@ -228,6 +233,7 @@ if menu == "Mock Interview (Voice)":
             os.remove("temp_interview.mp3")
             st.rerun() # Refresh tampilan untuk memunculkan pertanyaan baru
             st.success(f"You {user_text}")
+
 
 
 

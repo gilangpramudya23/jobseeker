@@ -100,6 +100,15 @@ elif menu == "Career Advisor & CV Analysis":
             )
 
     # 2. Tampilkan Riwayat Chat (jika sudah ada analisis)
+    
+    with st.expander("ℹ️ Tips untuk hasil terbaik"):
+        st.markdown("""
+        **Gunakan PDF berbentuk teks untuk mendapatkan report yang lebih akurat.**
+        
+        **Format yang didukung:**
+        - ✅ PDF dengan teks (Berbagai bahasa)
+        """)
+            
     for message in st.session_state.advisor_messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
@@ -124,17 +133,8 @@ elif menu == "Career Advisor & CV Analysis":
             
             # Simpan respon AI
             st.session_state.advisor_messages.append({"role": "assistant", "content": response})
-            st.rerun()
+            
     
-    # Help section
-    with st.expander("ℹ️ Tips untuk hasil terbaik"):
-        st.markdown("""
-        **Gunakan PDF berbentuk teks untuk mendapatkan report yang lebih akurat.**
-        
-        **Format yang didukung:**
-        - ✅ PDF dengan teks (Berbagai bahasa)
-        """)
-
 # --- 3. COVER LETTER GENERATOR ---
 elif menu == "Cover Letter Generator":
     st.header("📝 Tailored Cover Letter")
@@ -226,6 +226,7 @@ if menu == "AI Interview Assistant (Voice)":
             os.remove("temp_interview.mp3")
             st.rerun() # Refresh tampilan untuk memunculkan pertanyaan baru
             st.success(f"You {user_text}")
+
 
 
 

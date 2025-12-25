@@ -67,13 +67,6 @@ if menu == "Smart Chat (SQL & RAG)":
             if st.button("🗑️ Clear Chat"):
                 st.session_state.messages = []
                 st.rerun()
-    
-    # Tombol Clear Chat
-    if len(st.session_state.messages) > 0:
-        st.divider() # Garis pemisah agar rapi
-        if st.button("🗑️ Clear Chat"):
-            st.session_state.messages = []
-            st.rerun()
                 
 # --- 2. CAREER ADVISOR ---
 elif menu == "Career Advisor & CV Analysis":
@@ -216,6 +209,7 @@ if menu == "Mock Interview (Voice)":
             os.remove("temp_interview.mp3")
             st.rerun() # Refresh tampilan untuk memunculkan pertanyaan baru
             st.success(f"You {user_text}")
+
 
 
 

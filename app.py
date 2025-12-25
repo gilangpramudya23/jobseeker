@@ -69,6 +69,12 @@ if menu == "Smart Chat (SQL & RAG)":
                 st.rerun()
                 
 # --- 2. CAREER ADVISOR ---
+
+import pytesseract
+from pdf2image import convert_from_path
+
+print("OCR is ready!")
+
 elif menu == "Career Advisor & CV Analysis":
     st.header("👨‍💼 Career Consultant")
     st.caption("💡 Supports both text-based and scanned/image PDFs!")
@@ -259,6 +265,7 @@ if menu == "Mock Interview (Voice)":
             os.remove("temp_interview.mp3")
             st.rerun() # Refresh tampilan untuk memunculkan pertanyaan baru
             st.success(f"You {user_text}")
+
 
 
 

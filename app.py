@@ -82,7 +82,7 @@ def create_pdf(text):
     pdf.multi_cell(0, 10, txt=clean_text)
     return pdf.output()
 
-elif menu == "Career Advisor & CV Analysis":
+if menu == "Career Advisor & CV Analysis":
     st.header("👨‍💼 Career Consultant")
 
     # 1. Inisialisasi Session State untuk chat Career Advisor
@@ -240,6 +240,7 @@ if menu == "AI Interview Assistant (Voice)":
             os.remove("temp_interview.mp3")
             st.rerun() # Refresh tampilan untuk memunculkan pertanyaan baru
             st.success(f"You {user_text}")
+
 
 
 

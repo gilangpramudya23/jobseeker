@@ -142,48 +142,6 @@ class AdvisorAgent:
         response = chain.invoke({"input": input_text}, config={"callbacks": [self.langfuse_handler]})
         return response
 
-import pytesseract
-from pdf2image import convert_from_path
-from PIL import Image
-import os
-
-class CareerAdvisor:
-    def extract_text(self, file_path):
-        ext = file_path.split('.')[-1].lower()
-        extracted_text = ""
-
-        if ext in ['jpg', 'jpeg', 'png']:
-            # Pemrosesan Gambar Langsung
-            extracted_text = pytesseract.image_to_string(Image.open(file_path))
-        
-        elif ext == 'pdf':
-            # Coba baca sebagai PDF teks biasa dulu (Gunakan library PDF Anda, misal pdfplumber)
-            import pdfplumber
-            with pdfplumber.open(file_path) as pdf:
-                for page in pdf.pages:
-                    text = page.extract_text()
-                    if text:
-                        extracted_text += text
-            
-            # Jika teks kosong, berarti ini PDF Scan/Gambar. Gunakan OCR.
-            if not extracted_text.strip():
-                images = convert_from_path(file_path)
-                for img in images:
-                    extracted_text += pytesseract.image_to_string(img)
-        
-        return extracted_text
-
-    def analyze_and_recommend(self, file_path):
-        # 1. Ekstrak teks (Teks atau Scan tetap terbaca)
-        cv_text = self.extract_text(file_path)
-        
-        if not cv_text.strip():
-            return "Maaf, saya tidak dapat membaca teks di dokumen tersebut. Pastikan gambar cukup jelas."
-
-        # 2. Kirim cv_text ke LLM untuk analisis (seperti logika lama Anda)
-        # response = self.chain.invoke({"cv_data": cv_text})
-        return f"Hasil Analisis Berdasarkan CV Anda:\n\n{cv_text[:500]}..." # Contoh output
-
 if __name__ == "__main__":
     # Ensure this script is run from the project root or src is in pythonpath
     # Example usage:

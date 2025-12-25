@@ -73,29 +73,24 @@ if menu == "Smart Chat":
 elif menu == "Career Advisor & CV Analysis":
     st.header("👨‍💼 Career Consultant")
 
+    # 1. Inisialisasi Session State untuk chat Career Advisor
     if "advisor_messages" not in st.session_state:
         st.session_state.advisor_messages = []
 
-    # Update: Tambahkan format image pada type
-    uploaded_file = st.file_uploader("Upload CV (PDF, JPG, PNG)", type=["pdf", "jpg", "png", "jpeg"])
+    uploaded_file = st.file_uploader("Upload CV kamu (PDF)", type=["pdf"])
     
     if uploaded_file:
-        # Mendapatkan ekstensi file
-        file_extension = uploaded_file.name.split('.')[-1].lower()
-        temp_filename = f"temp_cv.{file_extension}"
-        
-        with open(temp_filename, "wb") as f:
+        # Simpan file sementara
+        with open("temp_cv.pdf", "wb") as f:
             f.write(uploaded_file.getbuffer())
         
         if st.button("Analisis CV & Cari Lowongan"):
-            with st.spinner("Membaca dan menganalisis dokumen..."):
-                # Kirim file ke agent (Agent akan menangani OCR di dalamnya)
-                report = agents["advisor"].analyze_and_recommend(temp_filename)
+            with st.spinner("Menganalisis profil kamu..."):
+                report = agents["advisor"].analyze_and_recommend("temp_cv.pdf")
+                
+                # Masukkan hasil laporan ke dalam history chat sebagai pesan awal AI
                 st.session_state.advisor_messages.append({"role": "assistant", "content": report})
-            
-            # Bersihkan file setelah diproses
-            if os.path.exists(temp_filename):
-                os.remove(temp_filename)
+            os.remove("temp_cv.pdf")
 
     # 2. Tampilkan Riwayat Chat (jika sudah ada analisis)
     for message in st.session_state.advisor_messages:
@@ -127,19 +122,10 @@ elif menu == "Career Advisor & CV Analysis":
     # Help section
     with st.expander("ℹ️ Tips untuk hasil terbaik"):
         st.markdown("""
-        **Untuk CV berbasis teks:**
-        - Format PDF standar akan diproses dengan cepat
-        
-        **Untuk CV scan/gambar:**
-        - Gunakan resolusi tinggi (300 DPI atau lebih)
-        - Pastikan teks terlihat jelas dan tidak buram
-        - Hindari background yang terlalu gelap
-        - OCR libraries harus terinstall (lihat dokumentasi)
+        **Gunakan PDF berbentuk teks untuk mendapatkan report yang lebih akurat.**
         
         **Format yang didukung:**
-        - ✅ PDF dengan teks (native)
-        - ✅ PDF hasil scan
-        - ✅ PDF berisi gambar CV
+        - ✅ PDF dengan teks (Berbagai bahasa)
         """)
 
 # --- 3. COVER LETTER GENERATOR ---
@@ -233,6 +219,7 @@ if menu == "AI Interview Assistant (Voice)":
             os.remove("temp_interview.mp3")
             st.rerun() # Refresh tampilan untuk memunculkan pertanyaan baru
             st.success(f"You {user_text}")
+
 
 
 

@@ -52,7 +52,7 @@ class Orchestrator:
             # 1. Tentukan rute
             router_chain = self.router_prompt | self.llm | StrOutputParser()
             decision = router_chain.invoke({"query": user_query},
-                                          "history": hisotry_text).strip()
+                                          "history": history_text).strip()
             
             logger.info(f"Routing Decision: {decision}")
 

@@ -62,13 +62,10 @@ class SQLAgent:
             handle_parsing_errors=True
         )
 
-    def run(self, query: str, history: st = "") -> str:
+    def run(self, query: str) -> str:
         try:
-            full_input = query
-            if history:
-                full_input = f"History percakapan sebelumnya: \n{history}\n\nPertanyaan baru: {query}"
             # Hapus callback langfuse sementara untuk memastikan tidak ada error lain
-            response = self.agent_executor.invoke({"input": full_input})
+            response = self.agent_executor.invoke({"input": query})
             if isinstance(response, dict) and "output" in response:
                 return response["output"]
             return str(response)

@@ -97,7 +97,7 @@ class RAGAgent:
             logger.error(f"Error during retrieval: {e}")
             return []
 
-    def run(self, query: str,history: str) -> str:
+    def run(self, query: str) -> str:
         """
         End-to-end RAG run: Retrieve -> Generate.
         """
@@ -113,8 +113,6 @@ class RAGAgent:
         
         flexible_prompt = ChatPromptTemplate.from_template(
             """You are a professional Career Assistant.
-            CONVERSATION HISTORY
-            {history}
             CONTEXT FROM DATABASE:
             {context}
             USER QUESTION:
@@ -134,7 +132,7 @@ class RAGAgent:
         # 3. Generate
         chain = flexible_prompt | self.llm | StrOutputParser()
         
-        response = chain.invoke({"context": context_text, "question": query}, "chat_history": history)
+        response = chain.invoke({"context": context_text, "question": query})
         return response
 
 if __name__ == "__main__":

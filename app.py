@@ -161,6 +161,15 @@ import os
 
 # --- DI DALAM KONDISI MENU INTERVIEW ---
 if menu == "AI Interview Assistant (Voice)":
+    
+        # --- LOGIKA FUNGSIONAL (TIDAK BERUBAH) ---
+    if "interview_history" not in st.session_state:
+        st.session_state.interview_history = "AI Interviewer: Hello! Let's start. Tell me about yourself.\n"
+        st.session_state.current_q = "Hello! Let's start. Tell me about yourself."
+        
+    if "interview_log" not in st.session_state:
+        st.session_state.interview_log = []
+        
     # Header dengan gaya Dashboard
     st.title("🎙️ AI Career Coach: Interview Room")
     st.caption("Berlatihlah bicara secara alami. Jawaban Anda akan ditranskripsi dan dianalisis secara otomatis.")
@@ -200,8 +209,6 @@ if menu == "AI Interview Assistant (Voice)":
 
         # 2. Riwayat Percakapan (Menggunakan st.chat_message agar unik)
         st.markdown("### 📝 Riwayat Jawaban Anda")
-        if "interview_log" not in st.session_state:
-            st.session_state.interview_log = []
 
         if not st.session_state.interview_log:
             st.info("Belum ada jawaban yang terekam.")
@@ -210,11 +217,6 @@ if menu == "AI Interview Assistant (Voice)":
             for i, msg in enumerate(st.session_state.interview_log):
                 with st.chat_message("user"):
                     st.write(msg)
-
-    # --- LOGIKA FUNGSIONAL (TIDAK BERUBAH) ---
-    if "interview_history" not in st.session_state:
-        st.session_state.interview_history = "AI Interviewer: Hello! Let's start. Tell me about yourself.\n"
-        st.session_state.current_q = "Hello! Let's start. Tell me about yourself."
 
     if audio_data:
         audio_bytes = audio_data['bytes']
@@ -248,3 +250,4 @@ if menu == "AI Interview Assistant (Voice)":
                 status.update(label="Proses selesai!", state="complete", expanded=False)
             
             st.rerun()
+

@@ -70,91 +70,54 @@ if menu == "Smart Chat (SQL & RAG)":
                 
 # --- 2. CAREER ADVISOR ---
 
-import pytesseract
-from pdf2image import convert_from_path
-
-print("OCR is ready!")
-
-if menu == "Career Advisor & CV Analysis":
+elif menu == "Career Advisor & CV Analysis":
     st.header("👨‍💼 Career Consultant")
-    st.caption("💡 Supports both text-based and scanned/image PDFs!")
-    
-    # Check OCR availability
-    try:
-        import pytesseract
-        from pdf2image import convert_from_path
-        ocr_status = "✅ OCR Available - Can process scanned documents"
-        ocr_color = "success"
-    except ImportError:
-        ocr_status = "⚠️ OCR Not Available - Only text-based PDFs supported. Install: pip install pdf2image pytesseract pillow"
-        ocr_color = "warning"
-    
-    st.info(ocr_status)
-    
-    # File uploader
-    uploaded_file = st.file_uploader(
-        "Upload CV kamu (PDF)", 
-        type=["pdf"],
-        help="Supports both regular PDFs and scanned documents"
-    )
+
+    # 1. Inisialisasi Session State untuk chat Career Advisor
+    if "advisor_messages" not in st.session_state:
+        st.session_state.advisor_messages = []
+
+    uploaded_file = st.file_uploader("Upload CV kamu (PDF)", type=["pdf"])
     
     if uploaded_file:
-        # Display file info
-        file_size = uploaded_file.size / 1024  # KB
-        st.write(f"📄 File: **{uploaded_file.name}** ({file_size:.1f} KB)")
-        
         # Simpan file sementara
-        temp_path = "temp_cv.pdf"
-        with open(temp_path, "wb") as f:
+        with open("temp_cv.pdf", "wb") as f:
             f.write(uploaded_file.getbuffer())
         
-        if st.button("🔍 Analisis CV & Cari Lowongan", type="primary"):
-            with st.spinner("Mengekstrak teks dari CV..."):
-                # Show progress
-                progress_bar = st.progress(0)
-                status_text = st.empty()
+        if st.button("Analisis CV & Cari Lowongan"):
+            with st.spinner("Menganalisis profil kamu..."):
+                report = agents["advisor"].analyze_and_recommend("temp_cv.pdf")
                 
-                try:
-                    status_text.text("📖 Membaca file PDF...")
-                    progress_bar.progress(20)
+                # Masukkan hasil laporan ke dalam history chat sebagai pesan awal AI
+                st.session_state.advisor_messages.append({"role": "assistant", "content": report})
+            os.remove("temp_cv.pdf")
+
+    # 2. Tampilkan Riwayat Chat (jika sudah ada analisis)
+    for message in st.session_state.advisor_messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    # 3. Input Message untuk Chat (Hanya muncul jika sudah ada analisis awal)
+    if st.session_state.advisor_messages:
+        if prompt := st.chat_input("Tanyakan lebih detail tentang saran karirmu..."):
+            # Tampilkan pesan user
+            st.session_state.advisor_messages.append({"role": "user", "content": prompt})
+            with st.chat_message("user"):
+                st.markdown(prompt)
+
+            # Minta respon dari Agent (Gunakan Orchestrator atau Advisor)
+            with st.chat_message("assistant"):
+                with st.spinner("Berpikir..."):
+                    # Kita buat history string dari advisor_messages untuk konteks
+                    history_text = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.advisor_messages[-5:]])
                     
-                    status_text.text("🔍 Menganalisis profil kandidat...")
-                    progress_bar.progress(40)
-                    
-                    # Analyze CV
-                    report = agents["advisor"].analyze_and_recommend(temp_path)
-                    
-                    progress_bar.progress(100)
-                    status_text.text("✅ Analisis selesai!")
-                    
-                    # Display results
-                    st.markdown("---")
-                    st.markdown("### 📋 Laporan Konsultasi Karir")
-                    
-                    # Check if it's an error message
-                    if report.startswith("Error:"):
-                        st.error(report)
-                    else:
-                        st.markdown(report)
-                        
-                        # Add download button for report
-                        st.download_button(
-                            label="📥 Download Laporan",
-                            data=report,
-                            file_name="career_consultation_report.txt",
-                            mime="text/plain"
-                        )
-                    
-                except Exception as e:
-                    st.error(f"Terjadi kesalahan saat menganalisis CV: {str(e)}")
-                    st.info("Jika CV Anda berupa scan/gambar, pastikan OCR libraries sudah terinstall.")
-                
-                finally:
-                    # Clean up
-                    if os.path.exists(temp_path):
-                        os.remove(temp_path)
-                    progress_bar.empty()
-                    status_text.empty()
+                    # Kamu bisa memanggil orchestrator agar AI tetap ingat konteks CV-mu
+                    response = agents["orchestrator"].route_request(prompt, history_text)
+                    st.markdown(response)
+            
+            # Simpan respon AI
+            st.session_state.advisor_messages.append({"role": "assistant", "content": response})
+            st.rerun()
     
     # Help section
     with st.expander("ℹ️ Tips untuk hasil terbaik"):
@@ -265,6 +228,7 @@ if menu == "Mock Interview (Voice)":
             os.remove("temp_interview.mp3")
             st.rerun() # Refresh tampilan untuk memunculkan pertanyaan baru
             st.success(f"You {user_text}")
+
 
 
 

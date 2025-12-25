@@ -71,6 +71,11 @@ if menu == "Smart Chat (SQL & RAG)":
 # --- 2. CAREER ADVISOR ---
 elif menu == "Career Advisor & CV Analysis":
     st.header("👨‍💼 Career Consultant")
+
+    # 1. Inisialisasi Session State untuk chat Career Advisor
+    if "advisor_messages" not in st.session_state:
+        st.session_state.advisor_messages = []
+
     uploaded_file = st.file_uploader("Upload CV kamu (PDF)", type=["pdf"])
     
     if uploaded_file:
@@ -81,9 +86,37 @@ elif menu == "Career Advisor & CV Analysis":
         if st.button("Analisis CV & Cari Lowongan"):
             with st.spinner("Menganalisis profil kamu..."):
                 report = agents["advisor"].analyze_and_recommend("temp_cv.pdf")
-                st.markdown("### Laporan Konsultasi")
-                st.write(report)
+                
+                # Masukkan hasil laporan ke dalam history chat sebagai pesan awal AI
+                st.session_state.advisor_messages.append({"role": "assistant", "content": report})
             os.remove("temp_cv.pdf")
+
+    # 2. Tampilkan Riwayat Chat (jika sudah ada analisis)
+    for message in st.session_state.advisor_messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    # 3. Input Message untuk Chat (Hanya muncul jika sudah ada analisis awal)
+    if st.session_state.advisor_messages:
+        if prompt := st.chat_input("Tanyakan lebih detail tentang saran karirmu..."):
+            # Tampilkan pesan user
+            st.session_state.advisor_messages.append({"role": "user", "content": prompt})
+            with st.chat_message("user"):
+                st.markdown(prompt)
+
+            # Minta respon dari Agent (Gunakan Orchestrator atau Advisor)
+            with st.chat_message("assistant"):
+                with st.spinner("Berpikir..."):
+                    # Kita buat history string dari advisor_messages untuk konteks
+                    history_text = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.advisor_messages[-5:]])
+                    
+                    # Kamu bisa memanggil orchestrator agar AI tetap ingat konteks CV-mu
+                    response = agents["orchestrator"].route_request(prompt, history_text)
+                    st.markdown(response)
+            
+            # Simpan respon AI
+            st.session_state.advisor_messages.append({"role": "assistant", "content": response})
+            st.rerun()
 
 # --- 3. COVER LETTER GENERATOR ---
 elif menu == "Cover Letter Generator":
@@ -176,6 +209,7 @@ if menu == "Mock Interview (Voice)":
             os.remove("temp_interview.mp3")
             st.rerun() # Refresh tampilan untuk memunculkan pertanyaan baru
             st.success(f"You {user_text}")
+
 
 
 

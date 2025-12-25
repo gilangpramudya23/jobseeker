@@ -95,7 +95,7 @@ elif menu == "Career Advisor & CV Analysis":
             st.download_button(
                 label="📥 Download Laporan",
                 data=report,
-                file_name="career_consultation_report.pdf"
+                file_name="career_consultation_report.pdf",
                 mime="text/plain"
             )
 
@@ -226,6 +226,7 @@ if menu == "AI Interview Assistant (Voice)":
             os.remove("temp_interview.mp3")
             st.rerun() # Refresh tampilan untuk memunculkan pertanyaan baru
             st.success(f"You {user_text}")
+
 
 
 

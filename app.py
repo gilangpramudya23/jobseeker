@@ -38,38 +38,68 @@ st.sidebar.divider()
 st.sidebar.info("Gunakan sidebar untuk berpindah antar fungsi agent.")
 
 # --- 1. SMART CHAT (ORCHESTRATOR) ---
+# --- 1. SMART CHAT (ORCHESTRATOR) ---
 if menu == "Smart Chat":
     st.header("💬 Smart Career Chat")
     st.write("Tanyakan data statistik atau informasi deskriptif lowongan")
     
+    # Inisialisasi session state
     if "messages" not in st.session_state:
         st.session_state.messages = []
-
+    
+    if "chat_session_id" not in st.session_state:
+        st.session_state.chat_session_id = f"chat_{len(st.session_state)}"
+    
+    # Tampilkan riwayat chat
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
-
+    
+    # Widget untuk melihat konteks (untuk debugging)
+    with st.expander("🔍 Debug: Lihat Konteks Percakapan", expanded=False):
+        if st.session_state.messages:
+            st.write(f"Jumlah pesan: {len(st.session_state.messages)}")
+            for i, msg in enumerate(st.session_state.messages[-3:]):
+                st.write(f"{i+1}. {msg['role']}: {msg['content'][:100]}...")
+    
+    # Input chat
     if prompt := st.chat_input("Contoh: Berapa jumlah lowongan Python? atau Apa syarat Software Engineer?"):
+        # Tambahkan pesan user
         st.session_state.messages.append({"role": "user", "content": prompt})
+        
         with st.chat_message("user"):
             st.markdown(prompt)
-
-        with st.chat_message("assistant"):
-            with st.spinner("Berpikir..."):
-                # Kirim history (semua pesan kecuali yang terakhir) ke orchestrator
-                history_for_agent = st.session_state.messages[:-1]  # Exclude current message
-                response = agents["orchestrator"].route_query(prompt, history_for_agent)
-                st.markdown(response)
         
+        with st.chat_message("assistant"):
+            with st.spinner("Menganalisis pertanyaan dan konteks..."):
+                try:
+                    # Kirim ke orchestrator dengan history dan session_id
+                    response = agents["orchestrator"].route_query(
+                        user_query=prompt,
+                        history=st.session_state.messages[:-1],  # Semua kecuali pesan terbaru
+                        session_id=st.session_state.chat_session_id
+                    )
+                    st.markdown(response)
+                except Exception as e:
+                    st.error(f"Error: {str(e)}")
+                    response = "Maaf, terjadi kesalahan. Silakan coba lagi."
+        
+        # Tambahkan respon ke history
         st.session_state.messages.append({"role": "assistant", "content": response})
     
-    # Add clear chat button
-    if len(st.session_state.messages) > 0:
-        col1, col2 = st.columns([6, 1])
-        with col2:
-            if st.button("🗑️ Clear Chat"):
-                st.session_state.messages = []
-                st.rerun()
+    # Tombol kontrol
+    col1, col2, col3 = st.columns([4, 1, 1])
+    
+    with col2:
+        if st.button("🔄 Reset Context", help="Hapus memory percakapan"):
+            agents["orchestrator"].clear_memory(st.session_state.chat_session_id)
+            st.session_state.messages = []
+            st.rerun()
+    
+    with col3:
+        if st.button("🗑️ Clear Chat", help="Hapus tampilan chat"):
+            st.session_state.messages = []
+            st.rerun()
                 
 # --- 2. CAREER ADVISOR ---
 
@@ -253,5 +283,6 @@ if menu == "AI Interview Assistant (Voice)":
                 status.update(label="Proses selesai!", state="complete", expanded=False)
             
             st.rerun()
+
 
 

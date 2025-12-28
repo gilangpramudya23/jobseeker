@@ -56,8 +56,11 @@ if menu == "Smart Chat":
 
         with st.chat_message("assistant"):
             with st.spinner("Berpikir..."):
-                response = agents["orchestrator"].route_query(prompt)
+                # Kirim history (semua pesan kecuali yang terakhir) ke orchestrator
+                history_for_agent = st.session_state.messages[:-1]  # Exclude current message
+                response = agents["orchestrator"].route_query(prompt, history_for_agent)
                 st.markdown(response)
+        
         st.session_state.messages.append({"role": "assistant", "content": response})
     
     # Add clear chat button
@@ -250,4 +253,5 @@ if menu == "AI Interview Assistant (Voice)":
                 status.update(label="Proses selesai!", state="complete", expanded=False)
             
             st.rerun()
+
 
